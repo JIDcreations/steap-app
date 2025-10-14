@@ -1,8 +1,9 @@
+import { ThemedText } from '@/components/themed-text';
+import useMessages from '@/data/messages';
+import { Link } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
-import useMessages from '@/data/messages';
 
 export default function HomeScreen() {
 const { data, isLoading, isError } = useMessages(); 
@@ -24,7 +25,8 @@ if (isLoading) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <ThemedText type="title">Home</ThemedText>
+        <ThemedText type="title" darkColor='black'>Home</ThemedText>
+        <Link href="/details">View details</Link>
         {data.map((message: any) => (
           <ThemedText key={message._id}>{message.text} </ThemedText>
         ))}
@@ -35,7 +37,7 @@ if (isLoading) {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#010213ff',
+    backgroundColor: '#ffffffff',
     flex: 1,
   },
   container: {
