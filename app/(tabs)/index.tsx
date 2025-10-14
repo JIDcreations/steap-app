@@ -35,7 +35,7 @@ if (isLoading) {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#010213ff',
     flex: 1,
   },
   container: {
