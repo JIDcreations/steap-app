@@ -1,41 +1,46 @@
+import { StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Ionicons } from '@expo/vector-icons';
-import { Link } from 'expo-router';
-import React from 'react';
-import { StyleSheet } from 'react-native';
+import useMessages from '@/data/messages';
 
 export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      {/* Home icon – change the name to try variants: leaf-outline, flame-outline, compass-outline */}
-      <Ionicons name="leaf-outline" size={48} />
-      <Ionicons name="leaf-outline" size={64} color="#7BC96F" />
-      <ThemedText type="title">Welcome to STEAP</ThemedText>
-      <ThemedText style={styles.subtitle}>
-        Track your teas and explore new flavors.
-      </ThemedText>
+const { data, isLoading, isError } = useMessages(); 
 
-      <Link href="/messages" style={styles.cta}>
-        <ThemedText type="link">Go to messages</ThemedText>
-      </Link>
-    </ThemedView>
+console.log(data);
+
+if (isLoading) {
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <ThemedText type="title">Loading...</ThemedText>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <ThemedText type="title">Home</ThemedText>
+        {data.map((message: any) => (
+          <ThemedText key={message._id}>{message.text} </ThemedText>
+        ))}
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    backgroundColor: '#ccc',
+    flex: 1,
+  },
   container: {
     flex: 1,
-    padding: 24,
-    alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-  },
-  subtitle: {
-    textAlign: 'center',
-    opacity: 0.7,
-  },
-  cta: {
-    marginTop: 8,
+    alignItems: 'center',
   },
 });
