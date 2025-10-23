@@ -2,10 +2,15 @@ import { Stack } from "expo-router";
 
 export default function RootLayout() {
   return (
-    <Stack initialRouteName="(home)">
-      {/* Tabs live inside the (home) group */}
-      <Stack.Screen name="(home)" options={{ headerShown: false }} />
-      {/* We’ll add other screens later like details */}
+    <Stack initialRouteName="tabs">
+      {/* Tabs = main navigation */}
+      <Stack.Screen name="tabs" options={{ headerShown: false }} />
+
+      {/* Home (feed) */}
+      <Stack.Screen name="home" options={{ title: "Home" }} />
+
+      {/* Extra screens (example) */}
+      <Stack.Screen name="details" options={{ title: "Details" }} />
     </Stack>
   );
 }
