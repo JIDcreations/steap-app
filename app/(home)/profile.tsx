@@ -1,1 +1,9 @@
-export { default } from "../(tabs)/profile";
+import { Text, View } from "react-native";
+
+export default function Profile() {
+  return (
+    <View style={{ padding: 16 }}>
+      <Text>Profile</Text>
+    </View>
+  );
+}
