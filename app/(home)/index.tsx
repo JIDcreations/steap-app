@@ -1,39 +1,61 @@
 // app/(home)/index.tsx
-import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
-// adjust paths if you don’t use '@'
 import { useSavedTeas } from '@/data/saved-teas';
 import { useTeas } from '@/data/teas';
+import { Ionicons } from '@expo/vector-icons';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 export default function HomeScreen() {
   const { data: teas, error, isLoading, mutate } = useTeas();
   const { isSaved, toggleSaved, refresh } = useSavedTeas();
 
   const [q, setQ] = useState('');
+  const [selectedType, setSelectedType] = useState<string | null>(null);
 
   const onRefresh = useCallback(() => {
     mutate();
     refresh();
   }, [mutate, refresh]);
 
+  const allTypes = [
+    'Black',
+    'Green',
+    'Herbal',
+    'Oolong',
+    'Pu-erh',
+    'Rooibos',
+    'White',
+  ];
+
   const filtered = useMemo(() => {
     if (!Array.isArray(teas)) return [];
-    if (!q.trim()) return teas;
     const needle = q.toLowerCase();
     return teas.filter((t: any) => {
       const name = (t.name ?? '').toLowerCase();
       const note = (t.note ?? '').toLowerCase();
       const type = (t.type?.name ?? '').toLowerCase();
       const user = (t.user?.username ?? '').toLowerCase();
-      return (
+
+      const matchesText =
+        !needle ||
         name.includes(needle) ||
         note.includes(needle) ||
         type.includes(needle) ||
-        user.includes(needle)
-      );
+        user.includes(needle);
+
+      const matchesType =
+        !selectedType || type === selectedType.toLowerCase();
+
+      return matchesText && matchesType;
     });
-  }, [teas, q]);
+  }, [teas, q, selectedType]);
 
   if (isLoading) return <Text>Loading teas...</Text>;
   if (error) return <Text selectable>{String(error)}</Text>;
@@ -74,6 +96,35 @@ export default function HomeScreen() {
         ) : null}
       </View>
 
+      {/* Fixed type filter chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ marginBottom: 12 }}
+      >
+        {allTypes.map((t) => {
+          const active = selectedType === t;
+          return (
+            <Pressable
+              key={t}
+              onPress={() => setSelectedType(active ? null : t)}
+              style={{
+                backgroundColor: active ? '#333' : '#f2f2f2',
+                paddingVertical: 6,
+                paddingHorizontal: 12,
+                borderRadius: 20,
+                marginRight: 8,
+              }}
+            >
+              <Text style={{ color: active ? '#fff' : '#333', fontWeight: '600' }}>
+                {t}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {/* Teas list */}
       {filtered && filtered.length > 0 ? (
         filtered.map((tea: any) => {
           const saved = isSaved(tea._id);
@@ -107,7 +158,7 @@ export default function HomeScreen() {
         })
       ) : (
         <View style={{ paddingTop: 24 }}>
-          <Text>No teas match your search.</Text>
+          <Text>No teas match your filters.</Text>
         </View>
       )}
     </ScrollView>
