@@ -17,7 +17,7 @@ export default function HomeScreen() {
   const { data: teas, error, isLoading, mutate } = useTeas();
   const { isSaved, toggleSaved, refresh } = useSavedTeas();
 
-  // dynamic tea types
+  // ✅ dynamic tea types
   const { items: teaTypes, isLoading: loadingTypes } = useTeaTypes();
 
   const [q, setQ] = useState('');
@@ -90,38 +90,14 @@ export default function HomeScreen() {
         ) : null}
       </View>
 
-      {/* Dynamic type filter chips */}
+      {/* ✅ Dynamic type filter chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         style={{ marginBottom: 12 }}
       >
-        {/* Always show an "All" chip so the row never disappears */}
-        <Pressable
-          onPress={() => setSelectedType(null)}
-          style={{
-            backgroundColor: selectedType === null ? '#333' : '#f2f2f2',
-            paddingVertical: 6,
-            paddingHorizontal: 12,
-            borderRadius: 20,
-            marginRight: 8,
-          }}
-        >
-          <Text style={{ color: selectedType === null ? '#fff' : '#333', fontWeight: '600' }}>
-            All
-          </Text>
-        </Pressable>
-
         {loadingTypes && (
-          <View
-            style={{
-              paddingVertical: 6,
-              paddingHorizontal: 12,
-              backgroundColor: '#f2f2f2',
-              borderRadius: 20,
-              marginRight: 8,
-            }}
-          >
+          <View style={{ paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#f2f2f2', borderRadius: 20, marginRight: 8 }}>
             <Text style={{ color: '#666' }}>Loading types…</Text>
           </View>
         )}
@@ -146,20 +122,6 @@ export default function HomeScreen() {
             </Pressable>
           );
         })}
-
-        {/* If the API returns 0 items, show a tiny hint */}
-        {!loadingTypes && teaTypes.length === 0 && (
-          <View
-            style={{
-              paddingVertical: 6,
-              paddingHorizontal: 12,
-              backgroundColor: '#f9eaea',
-              borderRadius: 20,
-            }}
-          >
-            <Text style={{ color: '#a33' }}>No types found</Text>
-          </View>
-        )}
       </ScrollView>
 
       {/* Teas list */}
