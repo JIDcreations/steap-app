@@ -1,22 +1,20 @@
 // app/(home)/index.tsx
+import { useTeas } from '@/data/teas'; // adjust path if needed
 import { useCallback } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
-// If you don't use '@' alias, change to: ../../data/teas
-import { useTeas } from '@/data/teas';
 
 export default function HomeScreen() {
   // Fetch teas + expose mutate for manual refresh
   const { data: teas, error, isLoading, mutate } = useTeas();
 
-  // Loading / error states
-  if (isLoading) return <Text>Loading teas...</Text>;
-  if (error) return <Text selectable>{String(error)}</Text>;
-
   // Pull-to-refresh handler
   const onRefresh = useCallback(() => {
-    // Triggers SWR revalidation (re-fetch)
     mutate();
   }, [mutate]);
+
+  // Early returns must come *after* hooks are defined
+  if (isLoading) return <Text>Loading teas...</Text>;
+  if (error) return <Text selectable>{String(error)}</Text>;
 
   return (
     <ScrollView
