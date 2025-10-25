@@ -1,17 +1,18 @@
 // app/(home)/library.tsx
-import { useSavedTeas } from '@/data/saved-teas'; // or ../../data/saved-teas
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
-import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+// adjust path if no '@' alias → ../../data/saved-teas
+import { useSavedTeas } from '@/data/saved-teas';
 
 export default function LibraryScreen() {
-  const { savedTeas, isLoading, error, refresh, reloadSaved } = useSavedTeas();
+  const { savedTeas, isLoading, error, refresh, reloadSaved, toggleSaved } = useSavedTeas();
 
   const onRefresh = useCallback(() => {
-    refresh(); // reload saved IDs + refetch teas
+    refresh(); // reload saved ids + refetch teas
   }, [refresh]);
 
-  // When the Library tab gains focus, reload saved IDs
   useFocusEffect(
     useCallback(() => {
       reloadSaved();
@@ -27,7 +28,7 @@ export default function LibraryScreen() {
       refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} />}
     >
       <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 16 }}>
-        Saved Teas
+        Saved Teas {savedTeas.length ? `(${savedTeas.length})` : ''}
       </Text>
 
       {savedTeas.length > 0 ? (
@@ -39,11 +40,26 @@ export default function LibraryScreen() {
               borderBottomWidth: 1,
               borderColor: '#ddd',
               paddingBottom: 8,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
             }}
           >
-            <Text style={{ fontSize: 18, fontWeight: '600' }}>{tea.name}</Text>
-            <Text style={{ color: '#666' }}>{tea.type?.name || 'Unknown type'}</Text>
-            {tea.note ? <Text style={{ color: '#999' }}>{tea.note}</Text> : null}
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 18, fontWeight: '600' }}>{tea.name}</Text>
+              <Text style={{ color: '#666' }}>{tea.type?.name || 'Unknown type'}</Text>
+              {tea.note ? <Text style={{ color: '#999' }}>{tea.note}</Text> : null}
+            </View>
+
+            {/* Unsave button */}
+            <Pressable
+              onPress={() => toggleSaved(tea._id)}
+              hitSlop={8}
+              style={{ padding: 6 }}
+              accessibilityLabel="Unsave tea"
+            >
+              <Ionicons name="trash-outline" size={22} />
+            </Pressable>
           </View>
         ))
       ) : (
