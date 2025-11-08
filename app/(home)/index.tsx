@@ -1,9 +1,8 @@
 // app/(home)/index.tsx
-import { useSavedTeas } from '@/data/saved-teas';
 import useTeaTypes from '@/data/tea-types';
 import { useTeas } from '@/data/teas';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
   RefreshControl,
@@ -13,19 +12,79 @@ import {
   View,
 } from 'react-native';
 
+// NEW: backend favorites helpers
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getFavorites, toggleFavorite } from '../../data/favorites';
+
 export default function HomeScreen() {
   const { data: teas, error, isLoading, mutate } = useTeas();
-  const { isSaved, toggleSaved, refresh } = useSavedTeas();
 
   // ✅ dynamic tea types
   const { items: teaTypes, isLoading: loadingTypes } = useTeaTypes();
+
+  // --- NEW: backend-powered "saved" state ----
+  const [userId, setUserId] = useState<string | null>(null);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+
+  // load userId once
+  useEffect(() => {
+    (async () => {
+      const id = await AsyncStorage.getItem('userId');
+      setUserId(id);
+    })();
+  }, []);
+
+  // fetch favorites from backend
+  const loadFavorites = useCallback(async () => {
+    if (!userId) return;
+    const favs = await getFavorites(userId); // populated tea objects
+    const ids = new Set<string>(favs.map((t: any) => t._id));
+    setSavedIds(ids);
+  }, [userId]);
+
+  // initial favorites load when userId is ready
+  useEffect(() => {
+    if (userId) loadFavorites();
+  }, [userId, loadFavorites]);
+
+  // helpers to mirror your old hook API
+  const isSaved = useCallback((teaId: string) => savedIds.has(teaId), [savedIds]);
+
+  const toggleSaved = useCallback(
+    async (teaId: string) => {
+      if (!userId) return;
+
+      // optimistic UI
+      setSavedIds(prev => {
+        const next = new Set(prev);
+        next.has(teaId) ? next.delete(teaId) : next.add(teaId);
+        return next;
+      });
+
+      try {
+        const res = await toggleFavorite(userId, teaId);
+        // sync to server truth
+        const ids = new Set<string>((res.favorites as any[]).map((t: any) => t._id));
+        setSavedIds(ids);
+      } catch {
+        // revert on error
+        await loadFavorites();
+      }
+    },
+    [userId, loadFavorites]
+  );
+
+  const refresh = useCallback(async () => {
+    await loadFavorites();
+  }, [loadFavorites]);
+  // --- END new saved logic ----
 
   const [q, setQ] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
 
   const onRefresh = useCallback(() => {
-    mutate();
-    refresh();
+    mutate();     // refresh teas
+    refresh();    // refresh favorites from backend
   }, [mutate, refresh]);
 
   const filtered = useMemo(() => {
@@ -90,7 +149,7 @@ export default function HomeScreen() {
         ) : null}
       </View>
 
-      {/* ✅ Dynamic type filter chips */}
+      {/* Dynamic type filter chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -149,7 +208,7 @@ export default function HomeScreen() {
                 {tea.note ? <Text style={{ color: '#999' }}>{tea.note}</Text> : null}
               </View>
 
-              {/* Save / Unsave */}
+              {/* Save / Unsave (now hits backend) */}
               <Pressable onPress={() => toggleSaved(tea._id)} hitSlop={8} style={{ padding: 6 }}>
                 <Ionicons name={saved ? 'checkmark-circle' : 'add-circle-outline'} size={24} />
               </Pressable>
