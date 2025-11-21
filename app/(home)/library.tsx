@@ -1,9 +1,16 @@
 // app/(home)/library.tsx
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
+import { getCurrentUser } from '../../data/auth';
 import { getFavorites, toggleFavorite } from '../../data/favorites';
 
 type Tea = {
@@ -20,11 +27,15 @@ export default function LibraryScreen() {
   const [error, setError] = useState<null | string>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Load user id once
+  // Haal de ingelogde user op uit auth (steap:user)
   useEffect(() => {
     (async () => {
-      const id = await AsyncStorage.getItem('userId');
-      setUserId(id);
+      const user = await getCurrentUser();
+      if (user?.id || user?._id) {
+        setUserId(user.id || user._id);
+      } else {
+        setUserId(null);
+      }
     })();
   }, []);
 
@@ -42,7 +53,6 @@ export default function LibraryScreen() {
     }
   }, [userId]);
 
-  // Refresh control
   const onRefresh = useCallback(async () => {
     if (!userId) return;
     setRefreshing(true);
@@ -54,37 +64,43 @@ export default function LibraryScreen() {
     }
   }, [userId]);
 
-  // Reload whenever screen gains focus
+  // Elke keer dat het scherm focus krijgt → reload
   useFocusEffect(
     useCallback(() => {
       loadFavorites();
     }, [loadFavorites])
   );
 
-  // Initial load after userId resolves
+  // Eerste load wanneer userId bekend is
   useEffect(() => {
-    if (userId) loadFavorites();
+    if (userId) {
+      loadFavorites();
+    }
   }, [userId, loadFavorites]);
 
-  // Toggle remove (trash icon)
   const onUnsave = useCallback(
     async (teaId: string) => {
       if (!userId) return;
-      // optimistic update
       const prev = savedTeas;
       setSavedTeas((cur) => cur.filter((t) => t._id !== teaId));
       try {
         const res = await toggleFavorite(userId, teaId); // server returns full favorites list
         setSavedTeas(res.favorites as Tea[]);
       } catch {
-        // revert on failure
         setSavedTeas(prev);
       }
     },
     [userId, savedTeas]
   );
 
-  if (!userId) return <Text style={{ padding: 16 }}>No user session found.</Text>;
+  if (!userId) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <Text>No user session found.</Text>
+      </View>
+    );
+  }
+
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -92,12 +108,21 @@ export default function LibraryScreen() {
       </View>
     );
   }
-  if (error) return <Text style={{ padding: 16 }} selectable>{error}</Text>;
+
+  if (error) {
+    return (
+      <Text style={{ padding: 16 }} selectable>
+        {error}
+      </Text>
+    );
+  }
 
   return (
     <ScrollView
       style={{ padding: 16 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
     >
       <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 16 }}>
         Saved Teas {savedTeas.length ? `(${savedTeas.length})` : ''}
@@ -119,8 +144,12 @@ export default function LibraryScreen() {
           >
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 18, fontWeight: '600' }}>{tea.name}</Text>
-              <Text style={{ color: '#666' }}>{tea.type?.name || 'Unknown type'}</Text>
-              {tea.note ? <Text style={{ color: '#999' }}>{tea.note}</Text> : null}
+              <Text style={{ color: '#666' }}>
+                {tea.type?.name || 'Unknown type'}
+              </Text>
+              {tea.note ? (
+                <Text style={{ color: '#999' }}>{tea.note}</Text>
+              ) : null}
             </View>
 
             <Pressable

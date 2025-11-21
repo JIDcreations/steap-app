@@ -1,14 +1,36 @@
 // app/(home)/profile.tsx
 import { useMyTeas } from '@/data/my-teas'; // or ../../data/my-teas
+import { useRouter, type Href } from 'expo-router';
 import { useCallback, useMemo } from 'react';
-import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
+import { logout } from '../../data/auth';
 
 export default function ProfileScreen() {
-  const { data: myTeas, allTeas, error, isLoading, mutate, userId, setCurrentUserId } = useMyTeas();
+  const router = useRouter();
+  const {
+    data: myTeas,
+    allTeas,
+    error,
+    isLoading,
+    mutate,
+    userId,
+    setCurrentUserId,
+  } = useMyTeas();
 
   const onRefresh = useCallback(() => {
     mutate();
   }, [mutate]);
+
+  async function handleLogout() {
+    await logout();
+    router.replace('/login' as Href);
+  }
 
   // Build a small distinct user list from all teas (username + id)
   const distinctUsers = useMemo(() => {
@@ -28,11 +50,31 @@ export default function ProfileScreen() {
   return (
     <ScrollView
       style={{ padding: 16 }}
-      refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} />}
+      refreshControl={
+        <RefreshControl refreshing={isLoading} onRefresh={onRefresh} />
+      }
     >
-      <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 8 }}>My Teas</Text>
+      {/* Logout button */}
+      <Pressable
+        onPress={handleLogout}
+        style={{
+          alignSelf: 'flex-end',
+          paddingVertical: 6,
+          paddingHorizontal: 12,
+          borderRadius: 999,
+          backgroundColor: '#c44',
+          marginBottom: 12,
+        }}
+      >
+        <Text style={{ color: '#fff', fontWeight: '600' }}>Log out</Text>
+      </Pressable>
+
+      <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 8 }}>
+        My Teas
+      </Text>
       <Text style={{ color: '#666', marginBottom: 16 }}>
-        Current userId: <Text style={{ fontWeight: '700' }}>{userId ?? '—'}</Text>
+        Current userId:{' '}
+        <Text style={{ fontWeight: '700' }}>{userId ?? '—'}</Text>
       </Text>
 
       {/* If empty, offer a quick “Set as me” chooser from detected users */}
@@ -48,11 +90,12 @@ export default function ProfileScreen() {
               style={{
                 paddingVertical: 10,
                 borderBottomWidth: 1,
-                borderColor: '#eee'
+                borderColor: '#eee',
               }}
             >
               <Text>
-                {u.username} — <Text style={{ color: '#666' }}>{u._id}</Text>
+                {u.username} —{' '}
+                <Text style={{ color: '#666' }}>{u._id}</Text>
               </Text>
             </Pressable>
           ))}
@@ -64,25 +107,27 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      {myTeas.length > 0 ? (
-        myTeas.map((tea: any) => (
-          <View
-            key={tea._id}
-            style={{
-              marginBottom: 12,
-              borderBottomWidth: 1,
-              borderColor: '#ddd',
-              paddingBottom: 8,
-            }}
-          >
-            <Text style={{ fontSize: 18, fontWeight: '600' }}>{tea.name}</Text>
-            <Text style={{ color: '#666' }}>
-              {tea.type?.name || 'Unknown type'}
-            </Text>
-            {tea.note ? <Text style={{ color: '#999' }}>{tea.note}</Text> : null}
-          </View>
-        ))
-      ) : null}
+      {myTeas.length > 0
+        ? myTeas.map((tea: any) => (
+            <View
+              key={tea._id}
+              style={{
+                marginBottom: 12,
+                borderBottomWidth: 1,
+                borderColor: '#ddd',
+                paddingBottom: 8,
+              }}
+            >
+              <Text style={{ fontSize: 18, fontWeight: '600' }}>{tea.name}</Text>
+              <Text style={{ color: '#666' }}>
+                {tea.type?.name || 'Unknown type'}
+              </Text>
+              {tea.note ? (
+                <Text style={{ color: '#999' }}>{tea.note}</Text>
+              ) : null}
+            </View>
+          ))
+        : null}
     </ScrollView>
   );
 }

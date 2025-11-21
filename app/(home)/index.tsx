@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 
 // NEW: backend favorites helpers
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getCurrentUser } from '../../data/auth';
 import { getFavorites, toggleFavorite } from '../../data/favorites';
 
 export default function HomeScreen() {
@@ -26,11 +26,15 @@ export default function HomeScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
-  // load userId once
+  // load userId once from auth (steap:user)
   useEffect(() => {
     (async () => {
-      const id = await AsyncStorage.getItem('userId');
-      setUserId(id);
+      const user = await getCurrentUser();
+      if (user?.id || user?._id) {
+        setUserId(user.id || user._id);
+      } else {
+        setUserId(null);
+      }
     })();
   }, []);
 
@@ -156,7 +160,15 @@ export default function HomeScreen() {
         style={{ marginBottom: 12 }}
       >
         {loadingTypes && (
-          <View style={{ paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#f2f2f2', borderRadius: 20, marginRight: 8 }}>
+          <View
+            style={{
+              paddingVertical: 6,
+              paddingHorizontal: 12,
+              backgroundColor: '#f2f2f2',
+              borderRadius: 20,
+              marginRight: 8,
+            }}
+          >
             <Text style={{ color: '#666' }}>Loading types…</Text>
           </View>
         )}
@@ -209,8 +221,15 @@ export default function HomeScreen() {
               </View>
 
               {/* Save / Unsave (now hits backend) */}
-              <Pressable onPress={() => toggleSaved(tea._id)} hitSlop={8} style={{ padding: 6 }}>
-                <Ionicons name={saved ? 'checkmark-circle' : 'add-circle-outline'} size={24} />
+              <Pressable
+                onPress={() => toggleSaved(tea._id)}
+                hitSlop={8}
+                style={{ padding: 6 }}
+              >
+                <Ionicons
+                  name={saved ? 'checkmark-circle' : 'add-circle-outline'}
+                  size={24}
+                />
               </Pressable>
             </View>
           );

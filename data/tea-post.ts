@@ -2,6 +2,7 @@
 import useSWRMutation from 'swr/mutation';
 import { API_URL } from '../constants/Api';
 import mutation from './_mutation';
+import { getCurrentUser } from './auth';
 
 type Mood = 'calming' | 'energizing' | 'cozy' | 'focus';
 
@@ -14,7 +15,9 @@ export type TeaCreate = {
   color?: string;          // one of your 5 hex values
   moodTag?: Mood;
   public?: boolean;
-  user: string;            // User _id
+  // vroeger: user: string;  // User _id
+  // user is niet meer nodig in de UI, we halen de userId uit AsyncStorage
+  user?: string;
 };
 
 export type TeaResponse = {
@@ -37,11 +40,24 @@ export default function useTeaPost() {
     TeaCreate               // arg type passed to trigger(...)
   >(
     `${API_URL}/teas`,
-    (url: string, { arg }: { arg: TeaCreate }) =>
-      mutation(url, {
+    async (url: string, { arg }: { arg: TeaCreate }) => {
+      // haal de ingelogde user op uit AsyncStorage
+      const user = await getCurrentUser();
+      if (!user) {
+        throw new Error('Not logged in');
+      }
+
+      const payload = {
+        ...arg,
+        // backend verwacht userId in body
+        userId: user.id || user._id,
+      };
+
+      return mutation(url, {
         method: 'POST',
-        body: arg,
-      })
+        body: payload,
+      });
+    }
   );
 
   return { trigger, data, isMutating, error };

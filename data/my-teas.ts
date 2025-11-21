@@ -1,50 +1,43 @@
 // data/my-teas.ts
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { getCurrentUser } from './auth';
 import { useTeas } from './teas';
-
-const USER_KEY = 'userId';
-
-async function readUserId(): Promise<string | null> {
-  try {
-    return await AsyncStorage.getItem(USER_KEY);
-  } catch {
-    return null;
-  }
-}
-
-async function writeUserId(v: string) {
-  try {
-    await AsyncStorage.setItem(USER_KEY, v);
-  } catch {}
-}
 
 export function useMyTeas() {
   const { data: allTeas, error, isLoading, mutate } = useTeas();
+
   const [userId, setUserId] = useState<string | null>(null);
 
+  // haal ingelogde user uit AsyncStorage
   useEffect(() => {
-    readUserId().then(setUserId);
+    async function load() {
+      const user = await getCurrentUser();
+      if (user?.id || user?._id) {
+        setUserId(user.id || user._id);
+      }
+    }
+    load();
   }, []);
 
-  const setCurrentUserId = useCallback(async (v: string) => {
-    await writeUserId(v);
-    setUserId(v);
-    mutate(); // refresh views depending on user filter
-  }, [mutate]);
-
+  // Filter op teas van ingelogde user
   const myTeas = useMemo(() => {
     if (!Array.isArray(allTeas) || !userId) return [];
-    return allTeas.filter(t => t?.user?._id === userId);
+    return allTeas.filter((t) => {
+      const u = t.user;
+      if (!u) return false;
+
+      if (typeof u === 'string') return u === userId;
+      return u._id === userId;
+    });
   }, [allTeas, userId]);
 
   return {
-    data: myTeas,
+    data: myTeas,                           // alleen teas van ingelogde user
     allTeas: Array.isArray(allTeas) ? allTeas : [],
     userId,
-    setCurrentUserId,
+    setCurrentUserId: setUserId,            // nog laten staan voor debug
     error,
     isLoading: isLoading || !userId,
-    mutate
+    mutate,
   };
 }
