@@ -1,43 +1,42 @@
-// app/(auth)/login.tsx
+// app/(auth)/register.tsx
 import { useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import {
-  ActivityIndicator,
-  Pressable,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Pressable,
+    Text,
+    TextInput,
+    View,
 } from 'react-native';
-import { login } from '../../data/auth';
+import { register } from '../../data/auth';
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
   const router = useRouter();
 
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleLogin() {
+  async function handleRegister() {
     if (!username.trim()) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      await login(username.trim());
+      await register(username.trim());
 
-      // Na login → naar home layout
+      // na register meteen ingelogd → naar home
       router.replace('/' as Href);
     } catch (e: any) {
-      setError(e.message || 'Login failed');
+      setError(e.message || 'Register failed');
     } finally {
       setLoading(false);
     }
   }
 
-  function goToRegister() {
-    // expo-router type fix
-    router.push('/register' as Href);
+  function goToLogin() {
+    router.push('/login' as Href);
   }
 
   return (
@@ -50,7 +49,7 @@ export default function LoginScreen() {
       }}
     >
       <Text style={{ fontSize: 32, fontWeight: '700' }}>MounTea</Text>
-      <Text style={{ opacity: 0.7 }}>Enter your username to continue</Text>
+      <Text style={{ opacity: 0.7 }}>Choose a username to create an account</Text>
 
       <TextInput
         value={username}
@@ -65,11 +64,11 @@ export default function LoginScreen() {
           borderRadius: 12,
           fontSize: 16,
         }}
-        onSubmitEditing={handleLogin}
+        onSubmitEditing={handleRegister}
       />
 
       <Pressable
-        onPress={handleLogin}
+        onPress={handleRegister}
         disabled={loading || !username.trim()}
         style={{
           backgroundColor: '#243235',
@@ -82,7 +81,7 @@ export default function LoginScreen() {
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={{ color: '#fff', fontWeight: '600' }}>Continue</Text>
+          <Text style={{ color: '#fff', fontWeight: '600' }}>Create account</Text>
         )}
       </Pressable>
 
@@ -92,9 +91,9 @@ export default function LoginScreen() {
         </Text>
       )}
 
-      <Pressable onPress={goToRegister}>
+      <Pressable onPress={goToLogin}>
         <Text style={{ textDecorationLine: 'underline', opacity: 0.7 }}>
-          Create account
+          Already have an account? Login
         </Text>
       </Pressable>
     </View>
