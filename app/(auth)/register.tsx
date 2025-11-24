@@ -2,13 +2,18 @@
 import { useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import {
-    ActivityIndicator,
-    Pressable,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Image,
+  ImageBackground,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
+
 import { register } from '../../data/auth';
+import { COLORS, FONTS, RADIUS, SPACING, TYPO } from '../theme';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -25,8 +30,6 @@ export default function RegisterScreen() {
       setError(null);
 
       await register(username.trim());
-
-      // na register meteen ingelogd → naar home
       router.replace('/' as Href);
     } catch (e: any) {
       setError(e.message || 'Register failed');
@@ -39,63 +42,154 @@ export default function RegisterScreen() {
     router.push('/login' as Href);
   }
 
+  const disabled = loading || !username.trim();
+
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: 'center',
-        padding: 24,
-        gap: 20,
-      }}
+    <ImageBackground
+      source={require('../../assets/images/MounteaLoginBG.png')}
+      style={styles.bg}
+      resizeMode="cover"
     >
-      <Text style={{ fontSize: 32, fontWeight: '700' }}>MounTea</Text>
-      <Text style={{ opacity: 0.7 }}>Choose a username to create an account</Text>
+      <View style={styles.content}>
+        {/* Top block: brand + logo */}
+        <View style={styles.topBlock}>
+          <Text style={styles.brandTitle}>MOUNTEA</Text>
 
-      <TextInput
-        value={username}
-        onChangeText={setUsername}
-        placeholder="username"
-        autoCapitalize="none"
-        autoCorrect={false}
-        style={{
-          borderWidth: 1,
-          borderColor: '#ccc',
-          padding: 14,
-          borderRadius: 12,
-          fontSize: 16,
-        }}
-        onSubmitEditing={handleRegister}
-      />
+          <Image
+            source={require('../../assets/images/MounteaLogo.png')}
+            style={styles.logo}
+          />
+        </View>
 
-      <Pressable
-        onPress={handleRegister}
-        disabled={loading || !username.trim()}
-        style={{
-          backgroundColor: '#243235',
-          opacity: loading || !username.trim() ? 0.4 : 1,
-          padding: 14,
-          borderRadius: 12,
-          alignItems: 'center',
-        }}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={{ color: '#fff', fontWeight: '600' }}>Create account</Text>
-        )}
-      </Pressable>
+        {/* Bottom block: title + form + links */}
+        <View style={styles.bottomBlock}>
+          <Text style={styles.pageTitle}>Sign Up</Text>
 
-      {error && (
-        <Text style={{ color: 'red', marginTop: -10 }}>
-          {error}
-        </Text>
-      )}
+          <View style={styles.formBlock}>
+            <TextInput
+              value={username}
+              onChangeText={setUsername}
+              placeholder="Choose a username"
+              placeholderTextColor="#7D9B93"
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={styles.input}
+              onSubmitEditing={handleRegister}
+            />
 
-      <Pressable onPress={goToLogin}>
-        <Text style={{ textDecorationLine: 'underline', opacity: 0.7 }}>
-          Already have an account? Login
-        </Text>
-      </Pressable>
-    </View>
+            <Pressable
+              disabled={disabled}
+              onPress={handleRegister}
+              style={[styles.button, disabled && styles.buttonDisabled]}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FDFBFC" />
+              ) : (
+                <Text style={styles.buttonText}>Create account</Text>
+              )}
+            </Pressable>
+          </View>
+
+          {error && <Text style={styles.error}>{error}</Text>}
+
+          <Pressable onPress={goToLogin}>
+            <Text style={styles.registerText}>
+              Already have an account?{' '}
+              <Text style={styles.registerHighlight}>Log in</Text>
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </ImageBackground>
   );
 }
+
+const styles = StyleSheet.create({
+  bg: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    paddingHorizontal: SPACING.xl,
+  },
+
+  content: {
+    flex: 1,
+    paddingTop: 76,
+  },
+
+  topBlock: {
+    alignItems: 'center',
+    gap: 60,
+    marginTop: 20,
+  },
+
+  brandTitle: {
+    ...TYPO.display1,
+    color: '#ffffff',
+  },
+
+  logo: {
+    width: 140,
+    height: 140,
+    resizeMode: 'contain',
+  },
+
+  bottomBlock: {
+    marginTop: 'auto',
+    paddingBottom: 100,
+    gap: 30,
+  },
+
+  pageTitle: {
+    ...TYPO.display2,
+    color: '#ffffff',
+    textAlign: 'center',
+  },
+
+  formBlock: {
+    gap: 30,
+  },
+
+  input: {
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+    fontSize: 16,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    color: '#ffffff',
+  },
+
+  button: {
+    backgroundColor: COLORS.accent,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+    alignItems: 'center',
+  },
+
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+
+  buttonText: {
+    ...TYPO.bodyMedium,
+    color: COLORS.textOnAccent,
+  },
+
+  error: {
+    color: COLORS.danger,
+    textAlign: 'center',
+    marginTop: SPACING.sm,
+    ...TYPO.small,
+  },
+
+  registerText: {
+    ...TYPO.small,
+    color: '#ffffff',
+    textAlign: 'center',
+  },
+
+  registerHighlight: {
+    color: COLORS.accent,
+    fontFamily: FONTS.bodyMedium,
+  },
+});

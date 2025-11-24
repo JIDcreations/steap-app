@@ -108,6 +108,18 @@ export const TYPO = {
     fontFamily: FONTS.bodyMedium,
     fontSize: 10,
   },
+
+  display2: {
+  fontFamily: FONTS.display,   // PlayfairDisplay-Bold
+  fontSize: 24,
+},
+
+display1: {
+  fontFamily: FONTS.display,  // PlayfairDisplay-Bold
+  fontSize: 32,
+  letterSpacing: 8,            // 25% of 32px
+},
+
 };
 
 // Schaduw voor kaarten (optioneel)
