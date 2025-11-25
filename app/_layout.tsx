@@ -3,6 +3,7 @@ import { useFonts } from 'expo-font';
 import { Slot, useRouter, useSegments, type Href } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { getCurrentUser } from '../data/auth';
 
 export default function RootLayout() {
@@ -57,5 +58,9 @@ export default function RootLayout() {
     );
   }
 
-  return <Slot />;
+  return (
+    <KeyboardProvider>
+      <Slot />
+    </KeyboardProvider>
+  );
 }

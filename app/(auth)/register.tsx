@@ -12,6 +12,8 @@ import {
   View,
 } from 'react-native';
 
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+
 import { register } from '../../data/auth';
 import { COLORS, FONTS, RADIUS, SPACING, TYPO } from '../theme';
 
@@ -50,56 +52,63 @@ export default function RegisterScreen() {
       style={styles.bg}
       resizeMode="cover"
     >
-      <View style={styles.content}>
-        {/* Top block: brand + logo */}
-        <View style={styles.topBlock}>
-          <Text style={styles.brandTitle}>ATEATUDE</Text>
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={32}
+      >
+        <View style={styles.content}>
+          {/* Top block: brand + logo */}
+          <View style={styles.topBlock}>
+            <Text style={styles.brandTitle}>ATEATUDE</Text>
 
-          <Image
-            source={require('../../assets/images/MounteaLogo.png')}
-            style={styles.logo}
-          />
-        </View>
-
-        {/* Bottom block: title + form + links */}
-        <View style={styles.bottomBlock}>
-          <Text style={styles.pageTitle}>Sign Up</Text>
-
-          <View style={styles.formBlock}>
-            <TextInput
-              value={username}
-              onChangeText={setUsername}
-              placeholder="Choose a username"
-              placeholderTextColor="#7D9B93"
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={styles.input}
-              onSubmitEditing={handleRegister}
+            <Image
+              source={require('../../assets/images/MounteaLogo.png')}
+              style={styles.logo}
             />
-
-            <Pressable
-              disabled={disabled}
-              onPress={handleRegister}
-              style={[styles.button, disabled && styles.buttonDisabled]}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FDFBFC" />
-              ) : (
-                <Text style={styles.buttonText}>Create account</Text>
-              )}
-            </Pressable>
           </View>
 
-          {error && <Text style={styles.error}>{error}</Text>}
+          {/* Bottom block: title + form + links */}
+          <View style={styles.bottomBlock}>
+            <Text style={styles.pageTitle}>Sign Up</Text>
 
-          <Pressable onPress={goToLogin}>
-            <Text style={styles.registerText}>
-              Already have an account?{' '}
-              <Text style={styles.registerHighlight}>Log in</Text>
-            </Text>
-          </Pressable>
+            <View style={styles.formBlock}>
+              <TextInput
+                value={username}
+                onChangeText={setUsername}
+                placeholder="Choose a username"
+                placeholderTextColor="#7D9B93"
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.input}
+                onSubmitEditing={handleRegister}
+              />
+
+              <Pressable
+                disabled={disabled}
+                onPress={handleRegister}
+                style={[styles.button, disabled && styles.buttonDisabled]}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FDFBFC" />
+                ) : (
+                  <Text style={styles.buttonText}>Create account</Text>
+                )}
+              </Pressable>
+            </View>
+
+            {error && <Text style={styles.error}>{error}</Text>}
+
+            <Pressable onPress={goToLogin}>
+              <Text style={styles.registerText}>
+                Already have an account?{' '}
+                <Text style={styles.registerHighlight}>Log in</Text>
+              </Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      </KeyboardAwareScrollView>
     </ImageBackground>
   );
 }
@@ -109,6 +118,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-start',
     paddingHorizontal: SPACING.xl,
+  },
+
+  scrollContent: {
+    flexGrow: 1,
   },
 
   content: {

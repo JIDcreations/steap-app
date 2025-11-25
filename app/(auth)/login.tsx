@@ -12,6 +12,8 @@ import {
   View,
 } from 'react-native';
 
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+
 import { login } from '../../data/auth';
 import { COLORS, FONTS, RADIUS, SPACING, TYPO } from '../theme';
 
@@ -50,56 +52,63 @@ export default function LoginScreen() {
       style={styles.bg}
       resizeMode="cover"
     >
-      <View style={styles.content}>
-        {/* Top block: brand + logo */}
-        <View style={styles.topBlock}>
-          <Text style={styles.brandTitle}>ATEATUDE</Text>
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={32}
+      >
+        <View style={styles.content}>
+          {/* Top block: brand + logo */}
+          <View style={styles.topBlock}>
+            <Text style={styles.brandTitle}>ATEATUDE</Text>
 
-          <Image
-            source={require('../../assets/images/MounteaLogo.png')}
-            style={styles.logo}
-          />
-        </View>
-
-        {/* Bottom block: title + form + links */}
-        <View style={styles.bottomBlock}>
-          <Text style={styles.pageTitle}>Log In</Text>
-
-          <View style={styles.formBlock}>
-            <TextInput
-              value={username}
-              onChangeText={setUsername}
-              placeholder="Username"
-              placeholderTextColor="#7D9B93"
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={styles.input}
-              onSubmitEditing={handleLogin}
+            <Image
+              source={require('../../assets/images/MounteaLogo.png')}
+              style={styles.logo}
             />
-
-            <Pressable
-              disabled={disabled}
-              onPress={handleLogin}
-              style={[styles.button, disabled && styles.buttonDisabled]}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FDFBFC" />
-              ) : (
-                <Text style={styles.buttonText}>Login</Text>
-              )}
-            </Pressable>
           </View>
 
-          {error && <Text style={styles.error}>{error}</Text>}
+          {/* Bottom block: title + form + links */}
+          <View style={styles.bottomBlock}>
+            <Text style={styles.pageTitle}>Log In</Text>
 
-          <Pressable onPress={goToRegister}>
-            <Text style={styles.registerText}>
-              Don&apos;t have an account?{' '}
-              <Text style={styles.registerHighlight}>Sign Up</Text>
-            </Text>
-          </Pressable>
+            <View style={styles.formBlock}>
+              <TextInput
+                value={username}
+                onChangeText={setUsername}
+                placeholder="Username"
+                placeholderTextColor="#7D9B93"
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.input}
+                onSubmitEditing={handleLogin}
+              />
+
+              <Pressable
+                disabled={disabled}
+                onPress={handleLogin}
+                style={[styles.button, disabled && styles.buttonDisabled]}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FDFBFC" />
+                ) : (
+                  <Text style={styles.buttonText}>Login</Text>
+                )}
+              </Pressable>
+            </View>
+
+            {error && <Text style={styles.error}>{error}</Text>}
+
+            <Pressable onPress={goToRegister}>
+              <Text style={styles.registerText}>
+                Don&apos;t have an account?{' '}
+                <Text style={styles.registerHighlight}>Sign Up</Text>
+              </Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      </KeyboardAwareScrollView>
     </ImageBackground>
   );
 }
@@ -111,20 +120,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
   },
 
+  scrollContent: {
+    flexGrow: 1,
+  },
+
   content: {
     flex: 1,
-    paddingTop: 76, // MOUNTEA 56px from top
+    paddingTop: 76,
   },
 
   topBlock: {
     alignItems: 'center',
-    gap: 60, // 60px tussen MOUNTEA en logo
+    gap: 60,
     marginTop: 20,
   },
 
-  /* TITLE ABOVE LOGO */
   brandTitle: {
-    ...TYPO.display1, // H1: Playfair bold 32 + letterspacing
+    ...TYPO.display1,
     color: '#ffffff',
   },
 
@@ -135,20 +147,19 @@ const styles = StyleSheet.create({
   },
 
   bottomBlock: {
-    marginTop: 'auto', // push naar onderkant
-    paddingBottom: 100, // 100px van bottom
-    gap: 30, // spacing tussen "Log In", form, error, link
+    marginTop: 'auto',
+    paddingBottom: 100,
+    gap: 30,
   },
 
-  /* DISPLAY-2 */
   pageTitle: {
-    ...TYPO.display2, // Playfair 24
+    ...TYPO.display2,
     color: '#ffffff',
     textAlign: 'center',
   },
 
   formBlock: {
-    gap: 30, // 30px tussen input en button
+    gap: 30,
   },
 
   input: {
