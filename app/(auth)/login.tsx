@@ -2,20 +2,20 @@
 import { useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Image,
   ImageBackground,
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
+import { AuthButton } from '../../components/AuthButton';
+import { UsernameInput } from '../../components/UsernameInput';
 import { login } from '../../data/auth';
-import { COLORS, FONTS, RADIUS, SPACING, TYPO } from '../theme';
+import { COLORS, FONTS, SPACING, TYPO } from '../theme';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -74,28 +74,19 @@ export default function LoginScreen() {
             <Text style={styles.pageTitle}>Log In</Text>
 
             <View style={styles.formBlock}>
-              <TextInput
+              <UsernameInput
                 value={username}
                 onChangeText={setUsername}
                 placeholder="Username"
-                placeholderTextColor="#7D9B93"
-                autoCapitalize="none"
-                autoCorrect={false}
-                style={styles.input}
-                onSubmitEditing={handleLogin}
+                onSubmit={handleLogin}
               />
 
-              <Pressable
+              <AuthButton
+                label="Login"
+                loading={loading}
                 disabled={disabled}
                 onPress={handleLogin}
-                style={[styles.button, disabled && styles.buttonDisabled]}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#FDFBFC" />
-                ) : (
-                  <Text style={styles.buttonText}>Login</Text>
-                )}
-              </Pressable>
+              />
             </View>
 
             {error && <Text style={styles.error}>{error}</Text>}
@@ -160,32 +151,6 @@ const styles = StyleSheet.create({
 
   formBlock: {
     gap: 30,
-  },
-
-  input: {
-    borderWidth: 1,
-    borderColor: COLORS.accent,
-    padding: SPACING.md,
-    borderRadius: RADIUS.md,
-    fontSize: 16,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    color: '#ffffff',
-  },
-
-  button: {
-    backgroundColor: COLORS.accent,
-    padding: SPACING.md,
-    borderRadius: RADIUS.md,
-    alignItems: 'center',
-  },
-
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-
-  buttonText: {
-    ...TYPO.bodyMedium,
-    color: COLORS.textOnAccent,
   },
 
   error: {
