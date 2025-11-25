@@ -46,14 +46,14 @@ export default function LoginScreen() {
 
   return (
     <ImageBackground
-      source={require('../../assets/images/MounteaLoginBG.png')}
+      source={require('../../assets/images/MounteaBG3.png')}
       style={styles.bg}
       resizeMode="cover"
     >
       <View style={styles.content}>
         {/* Top block: brand + logo */}
         <View style={styles.topBlock}>
-          <Text style={styles.brandTitle}>MOUNTEA</Text>
+          <Text style={styles.brandTitle}>ATEATUDE</Text>
 
           <Image
             source={require('../../assets/images/MounteaLogo.png')}
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
 
   topBlock: {
     alignItems: 'center',
-    gap: 60, // 60px tussen MOUNTEA en logo
+    gap: 20, // 60px tussen MOUNTEA en logo
     marginTop: 20,
   },
 
@@ -136,8 +136,8 @@ const styles = StyleSheet.create({
 
   bottomBlock: {
     marginTop: 'auto', // push naar onderkant
-    paddingBottom: 100, // 100px van bottom
-    gap: 30, // spacing tussen "Log In", form, error, link
+    paddingBottom: 350, // 100px van bottom
+    gap: 16, // spacing tussen "Log In", form, error, link
   },
 
   /* DISPLAY-2 */

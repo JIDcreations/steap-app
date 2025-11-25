@@ -83,7 +83,7 @@ export const TYPO = {
   // Subtitel onder theenaam ("Calming Green")
   cardSubtitle: {
     fontFamily: FONTS.bodyLight,
-    fontSize: 14,
+    fontSize: 16,
   },
 
   // Body copy (beschrijving van de thee)
@@ -101,12 +101,12 @@ export const TYPO = {
 
   small: {
     fontFamily: FONTS.bodyLight,
-    fontSize: 12,
+    fontSize: 16,
   },
 
   navLabel: {
     fontFamily: FONTS.bodyMedium,
-    fontSize: 10,
+    fontSize: 16,
   },
 
   display2: {

@@ -53,7 +53,7 @@ export default function RegisterScreen() {
       <View style={styles.content}>
         {/* Top block: brand + logo */}
         <View style={styles.topBlock}>
-          <Text style={styles.brandTitle}>MOUNTEA</Text>
+          <Text style={styles.brandTitle}>ATEATUDE</Text>
 
           <Image
             source={require('../../assets/images/MounteaLogo.png')}
