@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
 
   topBlock: {
     alignItems: 'center',
-    gap: 20, // 60px tussen MOUNTEA en logo
+    gap: 60, // 60px tussen MOUNTEA en logo
     marginTop: 20,
   },
 
@@ -136,8 +136,8 @@ const styles = StyleSheet.create({
 
   bottomBlock: {
     marginTop: 'auto', // push naar onderkant
-    paddingBottom: 350, // 100px van bottom
-    gap: 16, // spacing tussen "Log In", form, error, link
+    paddingBottom: 100, // 100px van bottom
+    gap: 30, // spacing tussen "Log In", form, error, link
   },
 
   /* DISPLAY-2 */

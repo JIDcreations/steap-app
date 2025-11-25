@@ -46,7 +46,7 @@ export default function RegisterScreen() {
 
   return (
     <ImageBackground
-      source={require('../../assets/images/MounteaLoginBG.png')}
+      source={require('../../assets/images/MounteaBG3.png')}
       style={styles.bg}
       resizeMode="cover"
     >
