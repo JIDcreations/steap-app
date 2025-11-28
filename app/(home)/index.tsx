@@ -2,15 +2,13 @@
 
 import useTeaTypes from '@/data/tea-types';
 import { useTeas } from '@/data/teas';
-import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ImageBackground,
-  Pressable,
   RefreshControl,
   ScrollView,
   Text,
-  View
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,6 +20,7 @@ import { COLORS, SPACING, TYPO } from '../theme';
 // Components
 import Chip from '../../components/Chip';
 import SearchBar from '../../components/SearchBar';
+import TeaCard from '../../components/TeaCard';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -176,7 +175,7 @@ export default function HomeScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={{ marginBottom: SPACING.md }}
+          style={{ marginBottom: SPACING.lg }}
         >
           <View style={{ flexDirection: 'row' }}>
             <Chip
@@ -200,60 +199,26 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
 
-        {/* Teas List – voorlopig nog basic */}
+        {/* Teacards – horizontale scroller */}
         {filtered && filtered.length > 0 ? (
-          filtered.map((tea: any) => {
-            const saved = isSaved(tea._id);
-            return (
-              <View
-                key={tea._id}
-                style={{
-                  marginBottom: SPACING.sm,
-                  borderBottomWidth: 1,
-                  borderColor: COLORS.borderSoft,
-                  paddingBottom: SPACING.sm,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontSize: 18,
-                      fontWeight: '600',
-                      color: COLORS.text,
-                    }}
-                  >
-                    {tea.name}
-                  </Text>
-                  <Text style={{ color: COLORS.textSoft }}>
-                    {tea.type?.name || 'Unknown type'} •{' '}
-                    {tea.user?.username ?? '—'}
-                  </Text>
-                  {tea.note ? (
-                    <Text style={{ color: COLORS.textSoft }}>
-                      {tea.note}
-                    </Text>
-                  ) : null}
-                </View>
-
-                <Pressable
-                  onPress={() => handleToggleSaved(tea._id)}
-                  hitSlop={8}
-                  style={{ padding: 6 }}
-                >
-                  <Ionicons
-                    name={
-                      saved ? 'checkmark-circle' : 'add-circle-outline'
-                    }
-                    size={24}
-                    color={COLORS.accent}
-                  />
-                </Pressable>
-              </View>
-            );
-          })
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: SPACING.xl }}
+          >
+            <View style={{ flexDirection: 'row' }}>
+              {filtered.map((tea: any) => (
+                <TeaCard
+                  key={tea._id}
+                  name={tea.name}
+                  typeName={tea.type?.name}
+                  rating={tea.rating}
+                  saved={isSaved(tea._id)}
+                  onToggleSaved={() => handleToggleSaved(tea._id)}
+                />
+              ))}
+            </View>
+          </ScrollView>
         ) : (
           <View style={{ paddingTop: 24 }}>
             <Text style={{ color: COLORS.textSoft }}>
