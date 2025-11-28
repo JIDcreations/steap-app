@@ -1,18 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { COLORS } from "../theme"; // zelfde pad als bij login/register
+import { COLORS } from "../theme";
 
 export default function HomeTabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: true,
+        headerShown: false,        // <- hier fix je de "Home" header
         tabBarStyle: {
-          backgroundColor: COLORS.primaryDark, // jouw primary navbar kleur
+          backgroundColor: COLORS.primaryDark,
         },
         tabBarActiveTintColor: "#FFFFFF",
         tabBarInactiveTintColor: "#FFFFFF",
-
       }}
     >
       <Tabs.Screen
@@ -21,7 +20,7 @@ export default function HomeTabsLayout() {
           title: "Home",
           tabBarIcon: ({ focused, size }) => (
             <Ionicons
-              name={focused ? "home" : "home-outline"} // filled vs outline
+              name={focused ? "home" : "home-outline"}
               size={size}
               color="#ffffff"
             />
