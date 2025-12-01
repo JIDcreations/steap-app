@@ -213,6 +213,7 @@ export default function HomeScreen() {
                   name={tea.name}
                   typeName={tea.type?.name}
                   rating={tea.rating}
+                  color={tea.color}
                   saved={isSaved(tea._id)}
                   onToggleSaved={() => handleToggleSaved(tea._id)}
                 />

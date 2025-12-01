@@ -19,6 +19,7 @@ type Props = {
   name: string;
   typeName?: string;   // mood label ("Calming Green")
   rating?: number;
+  color?: string;      // ← NIEUW
   saved?: boolean;
   onToggleSaved?: () => void;
 };
@@ -27,6 +28,7 @@ export default function TeaCard({
   name,
   typeName,
   rating,
+  color,
   saved = false,
   onToggleSaved,
 }: Props) {
@@ -58,7 +60,12 @@ export default function TeaCard({
   };
 
   return (
-    <View style={styles.card}>
+    <View
+      style={[
+        styles.card,
+        color ? { backgroundColor: color } : null, // ← kleur uit DB
+      ]}
+    >
       {/* Tekstblok */}
       <View style={styles.textContainer}>
         {/* Thee naam */}
@@ -110,7 +117,7 @@ const styles = StyleSheet.create({
   card: {
     width: 165,
     height: 205,
-    backgroundColor: COLORS.teaCardDark,
+    backgroundColor: COLORS.teaCardDark, // default fallback
     borderRadius: CARD_RADIUS,
     paddingHorizontal: SPACING.md,
     paddingTop: SPACING.md,

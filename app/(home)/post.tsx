@@ -7,7 +7,7 @@ import useTeaPost from "../../data/tea-post"; // uses SWR mutation
 import useTeaTypes from "../../data/tea-types";
 
 // ✅ enums from your backend model
-const COLOR_SWATCHES = ['#E6D7D2', '#C2A98B', '#A88E85', '#8D7570', '#5E4F4D'] as const;
+const COLOR_SWATCHES = ['#b0a09bff', '#C2A98B', '#A88E85', '#8D7570', '#5E4F4D','#243235','#040403',] as const;
 const MOODS = ['calming', 'energizing', 'cozy', 'focus'] as const;
 
 // fallback user id (must exist in DB)
