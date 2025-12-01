@@ -1,172 +1,185 @@
 // app/(home)/library.tsx
-import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import React, { useCallback, useEffect, useState } from 'react';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Pressable,
+  ImageBackground,
   RefreshControl,
   ScrollView,
   Text,
   View,
 } from 'react-native';
-import { getCurrentUser } from '../../data/auth';
-import { getFavorites, toggleFavorite } from '../../data/favorites';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-type Tea = {
-  _id: string;
-  name: string;
-  type?: { name?: string };
-  note?: string;
-};
+import { getCurrentUser } from '../../data/auth';
+import { getFavorites } from '../../data/favorites';
+import { COLORS, SPACING, TYPO } from '../theme';
+
+// Components
+import useTeaTypes from '@/data/tea-types';
+import Chip from '../../components/Chip';
+import SearchBar from '../../components/SearchBar';
+import TeaCard from '../../components/TeaCard';
 
 export default function LibraryScreen() {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [savedTeas, setSavedTeas] = useState<Tea[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<null | string>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
 
-  // Haal de ingelogde user op uit auth (steap:user)
+  const { items: teaTypes } = useTeaTypes();
+
+  const [userId, setUserId] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Search + filters
+  const [q, setQ] = useState('');
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+
+  // Load current user
   useEffect(() => {
     (async () => {
       const user = await getCurrentUser();
       if (user?.id || user?._id) {
         setUserId(user.id || user._id);
-      } else {
-        setUserId(null);
       }
     })();
   }, []);
 
+  // Fetch favorites
   const loadFavorites = useCallback(async () => {
     if (!userId) return;
-    setIsLoading(true);
-    setError(null);
+
     try {
-      const favs = await getFavorites(userId); // populated teas
-      setSavedTeas(favs as Tea[]);
-    } catch (e: any) {
-      setError(e?.message || 'Failed to load favorites');
+      setIsLoading(true);
+      const favs = await getFavorites(userId);
+      setFavorites(Array.isArray(favs) ? favs : []);
     } finally {
       setIsLoading(false);
     }
   }, [userId]);
 
-  const onRefresh = useCallback(async () => {
-    if (!userId) return;
-    setRefreshing(true);
-    try {
-      const favs = await getFavorites(userId);
-      setSavedTeas(favs as Tea[]);
-    } finally {
-      setRefreshing(false);
-    }
-  }, [userId]);
-
-  // Elke keer dat het scherm focus krijgt → reload
-  useFocusEffect(
-    useCallback(() => {
-      loadFavorites();
-    }, [loadFavorites])
-  );
-
-  // Eerste load wanneer userId bekend is
   useEffect(() => {
-    if (userId) {
-      loadFavorites();
-    }
-  }, [userId, loadFavorites]);
+    loadFavorites();
+  }, [loadFavorites]);
 
-  const onUnsave = useCallback(
-    async (teaId: string) => {
-      if (!userId) return;
-      const prev = savedTeas;
-      setSavedTeas((cur) => cur.filter((t) => t._id !== teaId));
-      try {
-        const res = await toggleFavorite(userId, teaId); // server returns full favorites list
-        setSavedTeas(res.favorites as Tea[]);
-      } catch {
-        setSavedTeas(prev);
-      }
-    },
-    [userId, savedTeas]
-  );
+  const onRefresh = () => loadFavorites();
 
-  if (!userId) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 }}>
-        <Text>No user session found.</Text>
-      </View>
-    );
-  }
+  // FILTERING
+  const filtered = useMemo(() => {
+    if (!favorites) return [];
 
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
+    const needle = q.toLowerCase();
 
-  if (error) {
-    return (
-      <Text style={{ padding: 16 }} selectable>
-        {error}
-      </Text>
-    );
-  }
+    return favorites.filter((t: any) => {
+      const name = (t.name ?? '').toLowerCase();
+      const note = (t.note ?? '').toLowerCase();
+      const type = (t.type?.name ?? '').toLowerCase();
+
+      const matchesText =
+        !needle || name.includes(needle) || note.includes(needle) || type.includes(needle);
+
+      const matchesType =
+        !selectedType || type === selectedType.toLowerCase();
+
+      return matchesText && matchesType;
+    });
+  }, [favorites, q, selectedType]);
 
   return (
-    <ScrollView
-      style={{ padding: 16 }}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
+    <ImageBackground
+      source={require('../../assets/images/HomeBG.png')}
+      style={{ flex: 1 }}
+      imageStyle={{ resizeMode: 'cover', opacity: 0.35 }}
     >
-      <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 16 }}>
-        Saved Teas {savedTeas.length ? `(${savedTeas.length})` : ''}
-      </Text>
-
-      {savedTeas.length > 0 ? (
-        savedTeas.map((tea) => (
-          <View
-            key={tea._id}
-            style={{
-              marginBottom: 12,
-              borderBottomWidth: 1,
-              borderColor: '#ddd',
-              paddingBottom: 8,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-            }}
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} />}
+        contentContainerStyle={{
+          paddingHorizontal: SPACING.lg,
+          paddingTop: insets.top + SPACING.lg,
+          paddingBottom: SPACING.xl,
+        }}
+      >
+        {/* Titel */}
+        <View style={{ alignItems: 'center', marginBottom: SPACING.xl }}>
+          <Text
+            style={[
+              TYPO.display1,
+              { color: COLORS.primaryDark, textTransform: 'uppercase' },
+            ]}
           >
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 18, fontWeight: '600' }}>{tea.name}</Text>
-              <Text style={{ color: '#666' }}>
-                {tea.type?.name || 'Unknown type'}
-              </Text>
-              {tea.note ? (
-                <Text style={{ color: '#999' }}>{tea.note}</Text>
-              ) : null}
-            </View>
+            Library
+          </Text>
+        </View>
 
-            <Pressable
-              onPress={() => onUnsave(tea._id)}
-              hitSlop={8}
-              style={{ padding: 6 }}
-              accessibilityLabel="Unsave tea"
-            >
-              <Ionicons name="trash-outline" size={22} />
-            </Pressable>
+        {/* Search Bar */}
+        <View style={{ marginBottom: SPACING.md }}>
+          <SearchBar
+            value={q}
+            onChangeText={setQ}
+            onClear={() => setQ('')}
+            placeholder="Search in your saved teas"
+          />
+        </View>
+
+        {/* Chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginBottom: SPACING.lg }}
+        >
+          <View style={{ flexDirection: 'row' }}>
+            <Chip
+              label="All"
+              active={!selectedType}
+              onPress={() => setSelectedType(null)}
+            />
+
+            {(teaTypes as any[]).map((type: any) => (
+              <Chip
+                key={type._id}
+                label={type.name}
+                active={selectedType === type.name}
+                onPress={() =>
+                  setSelectedType(selectedType === type.name ? null : type.name)
+                }
+              />
+            ))}
           </View>
-        ))
-      ) : (
-        <Text style={{ color: '#666' }}>
-          You haven’t saved any teas yet. Go to Home and tap the “Add to Library” button.
-        </Text>
-      )}
-    </ScrollView>
+        </ScrollView>
+
+        {/* GRID: 2 columns, 20px vertical spacing */}
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+          }}
+        >
+          {filtered.map((tea: any) => (
+            <View
+              key={tea._id}
+              style={{
+                width: '48%',
+                marginBottom: 20, // ← 20px spacing tussen kaarten
+              }}
+            >
+              <TeaCard
+                name={tea.name}
+                typeName={tea.type?.name}
+                rating={tea.rating}
+                color={tea.color}
+                saved={true}       // In Library is alles saved
+                onToggleSaved={() => {}} // Geen toggle hier
+              />
+            </View>
+          ))}
+        </View>
+
+        {filtered.length === 0 && !isLoading && (
+          <Text style={{ color: COLORS.primaryDark, marginTop: 20 }}>
+            No saved teas found.
+          </Text>
+        )}
+      </ScrollView>
+    </ImageBackground>
   );
 }
