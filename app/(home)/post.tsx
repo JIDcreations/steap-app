@@ -6,20 +6,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ImageBackground,
-  Pressable,
   ScrollView,
   Switch,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Chip from '../../components/Chip';
+import FormField from '../../components/FormField';
+import PostButton from '../../components/PostButton';
 import useTeaPost from '../../data/tea-post';
 import useTeaTypes from '../../data/tea-types';
 import { COLORS, SPACING, TYPO } from '../theme';
+
 
 const COLOR_SWATCHES = [
   '#b0a09bff',
@@ -33,17 +35,6 @@ const COLOR_SWATCHES = [
 const MOODS = ['calming', 'energizing', 'cozy', 'focus'] as const;
 
 const SEED_USER_ID = '68deb78dd1fb610db1c307f8';
-
-const INPUT_HEIGHT = 50;
-
-const inputBaseStyle = {
-  borderWidth: 1,
-  borderColor: COLORS.primaryDark,
-  borderRadius: 8,
-  paddingHorizontal: SPACING.md,
-  height: INPUT_HEIGHT,
-  backgroundColor: 'transparent' as const,
-};
 
 export default function PostTea() {
   const insets = useSafeAreaInsets();
@@ -191,24 +182,12 @@ export default function PostTea() {
         </View>
 
         {/* NAME */}
-        <View style={{ marginBottom: SPACING.md }}>
-          <Text
-            style={{
-              fontSize: 14,
-              color: COLORS.primaryDark,
-              marginBottom: 6,
-            }}
-          >
-            Name
-          </Text>
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="e.g. Sencha, Chamomile,…"
-            placeholderTextColor={COLORS.textSoft}
-            style={inputBaseStyle}
-          />
-        </View>
+        <FormField
+          label="Name"
+          value={name}
+          onChangeText={setName}
+          placeholder="e.g. Sencha, Chamomile,…"
+        />
 
         {/* TYPE */}
         <View style={{ marginBottom: SPACING.md }}>
@@ -250,26 +229,14 @@ export default function PostTea() {
           )}
         </View>
 
-        {/* STEEP TIME */}
-        <View style={{ marginBottom: SPACING.md }}>
-          <Text
-            style={{
-              fontSize: 14,
-              color: COLORS.primaryDark,
-              marginBottom: 6,
-            }}
-          >
-            Steap Time (min)
-          </Text>
-          <TextInput
-            value={steepTime}
-            onChangeText={setSteepTime}
-            placeholder="3"
-            placeholderTextColor={COLORS.textSoft}
-            keyboardType="number-pad"
-            style={inputBaseStyle}
-          />
-        </View>
+        {/* STEAP TIME */}
+        <FormField
+          label="Steap Time (min)"
+          value={steepTime}
+          onChangeText={setSteepTime}
+          placeholder="3"
+          keyboardType="number-pad"
+        />
 
         {/* RATING – sterren */}
         <View style={{ marginBottom: SPACING.md }}>
@@ -324,8 +291,11 @@ export default function PostTea() {
             placeholderTextColor={COLORS.textSoft}
             multiline
             style={{
-              ...inputBaseStyle,
-              height: undefined,
+              borderWidth: 1,
+              borderColor: COLORS.primaryDark,
+              borderRadius: 8,
+              paddingHorizontal: SPACING.md,
+              backgroundColor: 'transparent',
               minHeight: 100,
               paddingVertical: 10,
               textAlignVertical: 'top',
@@ -423,28 +393,12 @@ export default function PostTea() {
         </View>
 
         {/* SUBMIT */}
-        <Pressable
-          onPress={onCreateTea}
-          disabled={!canSubmit}
-          style={{
-            backgroundColor: canSubmit
-              ? COLORS.primaryDark
-              : COLORS.backgroundAlt,
-            paddingVertical: 14,
-            borderRadius: 999,
-            alignItems: 'center',
-          }}
-        >
-          <Text
-            style={{
-              color: COLORS.primaryTextOnDark,
-              fontWeight: '600',
-              fontSize: 16,
-            }}
-          >
-            {isMutating ? 'Creating…' : 'Post Tea'}
-          </Text>
-        </Pressable>
+       <PostButton
+  title="Post Tea"
+  onPress={onCreateTea}
+  disabled={!canSubmit}
+  loading={isMutating}
+/>
 
         {/* FEEDBACK */}
         {error ? (
