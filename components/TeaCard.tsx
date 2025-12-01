@@ -19,9 +19,10 @@ type Props = {
   name: string;
   typeName?: string;   // mood label ("Calming Green")
   rating?: number;
-  color?: string;      // ← NIEUW
+  color?: string;
   saved?: boolean;
   onToggleSaved?: () => void;
+  onPressCard?: () => void;   // ← NIEUW
 };
 
 export default function TeaCard({
@@ -31,6 +32,7 @@ export default function TeaCard({
   color,
   saved = false,
   onToggleSaved,
+  onPressCard,
 }: Props) {
   // Animated value for leaf rotation (0 = normaal, 1 = licht naar links)
   const rotation = useRef(new Animated.Value(saved ? 1 : 0)).current;
@@ -55,15 +57,17 @@ export default function TeaCard({
     ],
   };
 
-  const handlePress = () => {
+  const handlePressSaved = () => {
     onToggleSaved?.();
   };
 
   return (
-    <View
-      style={[
+    <Pressable
+      onPress={onPressCard}
+      style={({ pressed }) => [
         styles.card,
-        color ? { backgroundColor: color } : null, // ← kleur uit DB
+        color ? { backgroundColor: color } : null,
+        pressed && { transform: [{ scale: 0.98 }] },
       ]}
     >
       {/* Tekstblok */}
@@ -97,7 +101,7 @@ export default function TeaCard({
 
       {/* Plus / saved button */}
       <Pressable
-        onPress={handlePress}
+        onPress={handlePressSaved}
         hitSlop={10}
         style={[styles.addButton, saved && styles.addButtonSaved]}
       >
@@ -107,7 +111,7 @@ export default function TeaCard({
           color={COLORS.primaryDark}
         />
       </Pressable>
-    </View>
+    </Pressable>
   );
 }
 

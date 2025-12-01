@@ -2,6 +2,7 @@
 
 import useTeaTypes from '@/data/tea-types';
 import { useTeas } from '@/data/teas';
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ImageBackground,
@@ -21,13 +22,14 @@ import { COLORS, SPACING, TYPO } from '../theme';
 import Chip from '../../components/Chip';
 import SearchBar from '../../components/SearchBar';
 import TeaCard from '../../components/TeaCard';
-import TeaRowCard from '../../components/TeaRowCard'; // ✔️ nieuwe import
+import TeaRowCard from '../../components/TeaRowCard';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const { data: teas, error, isLoading, mutate } = useTeas();
-  const { items: teaTypes, isLoading: loadingTypes } = useTeaTypes();
+  const { items: teaTypes } = useTeaTypes();
 
   // favorites state
   const [userId, setUserId] = useState<string | null>(null);
@@ -119,7 +121,7 @@ export default function HomeScreen() {
     });
   }, [teas, q, selectedType]);
 
-  // ✔️ recentste 3 teas
+  // 3 meest recente (teas komen al gesorteerd uit backend)
   const recentTeas = useMemo(() => {
     if (!Array.isArray(filtered)) return [];
     return filtered.slice(0, 3);
@@ -223,6 +225,12 @@ export default function HomeScreen() {
                   color={tea.color}
                   saved={isSaved(tea._id)}
                   onToggleSaved={() => handleToggleSaved(tea._id)}
+                  onPressCard={() =>
+                    router.push({
+                      pathname: '/tea/[id]',
+                      params: { id: tea._id },
+                    })
+                  }
                 />
               ))}
             </View>
@@ -235,17 +243,17 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* ✔️ Recently posted — verticale wide cards */}
+        {/* Recently posted — verticale wide cards */}
         {recentTeas.length > 0 && (
           <View style={{ marginTop: SPACING.lg }}>
-           <Text
-             style={[
-             TYPO.cardTitle,
-             { color: COLORS.primaryDark, marginBottom: SPACING.sm },
-         ]}
-          >
-          Recently posted
-          </Text>
+            <Text
+              style={[
+                TYPO.cardTitle,
+                { color: COLORS.primaryDark, marginBottom: SPACING.sm },
+              ]}
+            >
+              Recently posted
+            </Text>
 
             {recentTeas.map((tea: any) => (
               <TeaRowCard
@@ -256,11 +264,16 @@ export default function HomeScreen() {
                 color={tea.color}
                 saved={isSaved(tea._id)}
                 onToggleSaved={() => handleToggleSaved(tea._id)}
+                onPressRow={() =>
+                  router.push({
+                    pathname: '/tea/[id]',
+                    params: { id: tea._id },
+                  })
+                }
               />
             ))}
           </View>
         )}
-
       </ScrollView>
     </ImageBackground>
   );
