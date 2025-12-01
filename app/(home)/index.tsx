@@ -21,6 +21,7 @@ import { COLORS, SPACING, TYPO } from '../theme';
 import Chip from '../../components/Chip';
 import SearchBar from '../../components/SearchBar';
 import TeaCard from '../../components/TeaCard';
+import TeaRowCard from '../../components/TeaRowCard'; // ✔️ nieuwe import
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -117,6 +118,12 @@ export default function HomeScreen() {
       return matchesText && matchesType;
     });
   }, [teas, q, selectedType]);
+
+  // ✔️ recentste 3 teas
+  const recentTeas = useMemo(() => {
+    if (!Array.isArray(filtered)) return [];
+    return filtered.slice(0, 3);
+  }, [filtered]);
 
   if (isLoading) return <Text>Loading teas...</Text>;
   if (error) return <Text selectable>{String(error)}</Text>;
@@ -227,6 +234,33 @@ export default function HomeScreen() {
             </Text>
           </View>
         )}
+
+        {/* ✔️ Recently posted — verticale wide cards */}
+        {recentTeas.length > 0 && (
+          <View style={{ marginTop: SPACING.lg }}>
+           <Text
+             style={[
+             TYPO.cardTitle,
+             { color: COLORS.primaryDark, marginBottom: SPACING.sm },
+         ]}
+          >
+          Recently posted
+          </Text>
+
+            {recentTeas.map((tea: any) => (
+              <TeaRowCard
+                key={`recent-${tea._id}`}
+                name={tea.name}
+                typeName={tea.type?.name}
+                rating={tea.rating}
+                color={tea.color}
+                saved={isSaved(tea._id)}
+                onToggleSaved={() => handleToggleSaved(tea._id)}
+              />
+            ))}
+          </View>
+        )}
+
       </ScrollView>
     </ImageBackground>
   );
