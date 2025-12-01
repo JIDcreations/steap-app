@@ -264,7 +264,7 @@ export default function HomeScreen() {
                 color={tea.color}
                 saved={isSaved(tea._id)}
                 onToggleSaved={() => handleToggleSaved(tea._id)}
-                onPressRow={() =>
+                onPressCard={() =>
                   router.push({
                     pathname: '/tea/[id]',
                     params: { id: tea._id },

@@ -6,7 +6,7 @@ export default function HomeTabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: false,        // <- hier fix je de "Home" header
+        headerShown: false,
         tabBarStyle: {
           backgroundColor: COLORS.primaryDark,
         },
@@ -67,6 +67,14 @@ export default function HomeTabsLayout() {
               color="#ffffff"
             />
           ),
+        }}
+      />
+
+      {/* Verborgen detailpagina (geen tabbar item) */}
+      <Tabs.Screen
+        name="tea/[id]"
+        options={{
+          href: null,        // ← Hiermee verdwijnt hij uit de navbar
         }}
       />
     </Tabs>

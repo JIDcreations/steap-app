@@ -3,12 +3,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef } from 'react';
 import {
-    Animated,
-    ImageSourcePropType,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  Animated,
+  ImageSourcePropType,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 
 import { COLORS, FONTS, SHADOWS, SPACING } from '../app/theme';
@@ -22,6 +22,7 @@ type Props = {
   color?: string;
   saved?: boolean;
   onToggleSaved?: () => void;
+  onPressCard?: () => void;   // ← NIEUW
 };
 
 export default function TeaRowCard({
@@ -31,8 +32,9 @@ export default function TeaRowCard({
   color,
   saved = false,
   onToggleSaved,
+  onPressCard,
 }: Props) {
-  const handlePress = () => {
+  const handlePressSaved = () => {
     onToggleSaved?.();
   };
 
@@ -60,7 +62,8 @@ export default function TeaRowCard({
   };
 
   return (
-    <View
+    <Pressable
+      onPress={onPressCard}
       style={[
         styles.card,
         color ? { backgroundColor: color } : null,
@@ -94,7 +97,7 @@ export default function TeaRowCard({
       <Animated.Image source={FLOWER_IMG} style={[styles.flower, rotateStyle]} />
 
       <Pressable
-        onPress={handlePress}
+        onPress={handlePressSaved}
         hitSlop={10}
         style={[styles.addButton, saved && styles.addButtonSaved]}
       >
@@ -104,7 +107,7 @@ export default function TeaRowCard({
           color={COLORS.primaryDark}
         />
       </Pressable>
-    </View>
+    </Pressable>
   );
 }
 
