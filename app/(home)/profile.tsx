@@ -30,7 +30,6 @@ export default function ProfileScreen() {
     isLoading,
     mutate,
     userId,
-    setCurrentUserId,
   } = useMyTeas();
 
   const [savedCount, setSavedCount] = useState(0);
@@ -59,7 +58,7 @@ export default function ProfileScreen() {
   }, [loadFavorites]);
 
   const onRefresh = useCallback(() => {
-    mutate(); // reload myTeas
+    mutate();        // reload myTeas
     loadFavorites(); // reload saved teas count
   }, [mutate, loadFavorites]);
 
@@ -95,7 +94,7 @@ export default function ProfileScreen() {
     }, [])
   );
 
-  // unieke users op basis van alle teas
+  // unieke users op basis van alle teas (alleen als fallback voor naam)
   const distinctUsers = useMemo(() => {
     const map = new Map<string, { _id: string; username: string }>();
     for (const t of allTeas) {
@@ -302,7 +301,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* User picker als er nog geen teas zijn voor huidige user */}
+        {/* Simple empty-state i.p.v. user-picker */}
         {myTeas.length === 0 && (
           <View
             style={{
@@ -316,69 +315,23 @@ export default function ProfileScreen() {
               style={{
                 fontFamily: 'System',
                 fontWeight: '600',
-                fontSize: 14,
-                marginBottom: 8,
+                fontSize: 15,
+                marginBottom: 6,
                 color: COLORS.primaryDark,
               }}
             >
-              No teas found for your current user.
+              No teas yet
             </Text>
             <Text
               style={{
                 fontFamily: 'System',
                 fontSize: 13,
                 color: COLORS.primaryDark,
-                marginBottom: 10,
               }}
             >
-              Pick your profile from users who already posted a tea:
+              You haven{"'"}t posted any teas yet. Create your first post on the
+              post tab.
             </Text>
-
-            {distinctUsers.map(u => (
-              <Pressable
-                key={u._id}
-                onPress={() => setCurrentUserId(u._id)}
-                style={{
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
-                  borderRadius: 999,
-                  backgroundColor:
-                    u._id === userId ? COLORS.accent : COLORS.background,
-                  marginBottom: 8,
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: 'System',
-                    fontSize: 14,
-                    color: COLORS.primaryDark,
-                  }}
-                >
-                  {u.username}
-                </Text>
-                <Text
-                  style={{
-                    fontFamily: 'System',
-                    fontSize: 11,
-                    color: COLORS.textMutedOnCard,
-                  }}
-                >
-                  {u._id}
-                </Text>
-              </Pressable>
-            ))}
-
-            {distinctUsers.length === 0 && (
-              <Text
-                style={{
-                  fontFamily: 'System',
-                  fontSize: 13,
-                  color: COLORS.primaryDark,
-                }}
-              >
-                No users found in teas yet. Create a post first in the Home tab.
-              </Text>
-            )}
           </View>
         )}
 
