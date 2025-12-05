@@ -2,7 +2,7 @@
 
 import { useMyTeas } from '@/data/my-teas';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ImageBackground,
@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import TeaRowCard from '../../components/TeaRowCard';
-import { logout } from '../../data/auth';
+import { getCurrentUser, logout } from '../../data/auth';
 import { getFavorites } from '../../data/favorites';
 import { COLORS, SPACING, TYPO } from '../theme';
 
@@ -34,6 +34,10 @@ export default function ProfileScreen() {
   } = useMyTeas();
 
   const [savedCount, setSavedCount] = useState(0);
+
+  // auth-user uit AsyncStorage (ingelogde user)
+  const [authUser, setAuthUser] = useState<any | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   // favorites ophalen voor huidige user
   const loadFavorites = useCallback(async () => {
@@ -55,7 +59,7 @@ export default function ProfileScreen() {
   }, [loadFavorites]);
 
   const onRefresh = useCallback(() => {
-    mutate();        // reload myTeas
+    mutate(); // reload myTeas
     loadFavorites(); // reload saved teas count
   }, [mutate, loadFavorites]);
 
@@ -63,6 +67,33 @@ export default function ProfileScreen() {
     await logout();
     router.replace('/login' as Href);
   }
+
+  // auth user ophalen telkens wanneer Profile in focus komt
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      async function loadUser() {
+        try {
+          setAuthLoading(true);
+          const u = await getCurrentUser();
+          if (isActive) {
+            setAuthUser(u);
+          }
+        } finally {
+          if (isActive) {
+            setAuthLoading(false);
+          }
+        }
+      }
+
+      loadUser();
+
+      return () => {
+        isActive = false;
+      };
+    }, [])
+  );
 
   // unieke users op basis van alle teas
   const distinctUsers = useMemo(() => {
@@ -76,7 +107,7 @@ export default function ProfileScreen() {
     return Array.from(map.values());
   }, [allTeas]);
 
-  const currentUser = useMemo(() => {
+  const currentUserFromTeas = useMemo(() => {
     if (!userId) return null;
     return distinctUsers.find(u => u._id === userId) ?? null;
   }, [distinctUsers, userId]);
@@ -85,6 +116,9 @@ export default function ProfileScreen() {
 
   if (isLoading && !myTeas) return <Text>Loading my teas...</Text>;
   if (error) return <Text selectable>{String(error)}</Text>;
+
+  const displayName =
+    authUser?.username || currentUserFromTeas?.username || 'MounTea drinker';
 
   return (
     <ImageBackground
@@ -156,7 +190,7 @@ export default function ProfileScreen() {
               },
             ]}
           >
-            {currentUser?.username ?? 'MounTea drinker'}
+            {displayName}
           </Text>
           <Text
             style={{
@@ -370,8 +404,8 @@ export default function ProfileScreen() {
               typeName={tea.type?.name}
               rating={tea.rating}
               color={tea.color}
-              saved={false}              // op profiel niet als "saved" tonen
-              onToggleSaved={undefined}  // geen actie nodig hier
+              saved={false} // op profiel niet als "saved" tonen
+              onToggleSaved={undefined} // geen actie nodig hier
             />
           ))
         ) : (
