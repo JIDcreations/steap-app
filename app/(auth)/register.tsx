@@ -22,12 +22,19 @@ export default function RegisterScreen() {
   const router = useRouter();
 
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState(''); // nieuw
+  const [password, setPassword] = useState('');
+  const [passwordRepeat, setPasswordRepeat] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleRegister() {
-    if (!username.trim() || !password.trim()) return;
+    if (!username.trim() || !password.trim() || !passwordRepeat.trim()) return;
+
+    if (password !== passwordRepeat) {
+      setError('Passwords do not match');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -46,7 +53,12 @@ export default function RegisterScreen() {
     router.push('/login' as Href);
   }
 
-  const disabled = loading || !username.trim() || !password.trim();
+  const disabled =
+    loading ||
+    !username.trim() ||
+    !password.trim() ||
+    !passwordRepeat.trim() ||
+    password !== passwordRepeat;
 
   return (
     <ImageBackground
@@ -83,11 +95,20 @@ export default function RegisterScreen() {
                 onSubmit={handleRegister}
               />
 
-              {/* Password input */}
               <TextInput
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Choose a password"
+                secureTextEntry
+                autoCapitalize="none"
+                style={styles.passwordInput}
+                returnKeyType="next"
+              />
+
+              <TextInput
+                value={passwordRepeat}
+                onChangeText={setPasswordRepeat}
+                placeholder="Repeat your password"
                 secureTextEntry
                 autoCapitalize="none"
                 style={styles.passwordInput}
