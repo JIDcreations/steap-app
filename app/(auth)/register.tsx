@@ -7,6 +7,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
@@ -21,17 +22,18 @@ export default function RegisterScreen() {
   const router = useRouter();
 
   const [username, setUsername] = useState('');
+  const [password, setPassword] = useState(''); // nieuw
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleRegister() {
-    if (!username.trim()) return;
+    if (!username.trim() || !password.trim()) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      await register(username.trim());
+      await register(username.trim(), password.trim());
       router.replace('/' as Href);
     } catch (e: any) {
       setError(e.message || 'Register failed');
@@ -44,7 +46,7 @@ export default function RegisterScreen() {
     router.push('/login' as Href);
   }
 
-  const disabled = loading || !username.trim();
+  const disabled = loading || !username.trim() || !password.trim();
 
   return (
     <ImageBackground
@@ -79,6 +81,18 @@ export default function RegisterScreen() {
                 onChangeText={setUsername}
                 placeholder="Choose a username"
                 onSubmit={handleRegister}
+              />
+
+              {/* Password input */}
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Choose a password"
+                secureTextEntry
+                autoCapitalize="none"
+                style={styles.passwordInput}
+                returnKeyType="done"
+                onSubmitEditing={handleRegister}
               />
 
               <AuthButton
@@ -151,6 +165,15 @@ const styles = StyleSheet.create({
 
   formBlock: {
     gap: 30,
+  },
+
+  passwordInput: {
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    borderRadius: 999,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    ...TYPO.body,
+    color: '#ffffff',
   },
 
   error: {

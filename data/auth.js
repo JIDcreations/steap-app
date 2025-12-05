@@ -1,4 +1,4 @@
-// data/auth.js of data/auth.ts (maakt niet uit, Expo kan JS importeren)
+// data/auth.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // use the same variable you already have working
@@ -6,12 +6,12 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const USER_KEY = 'steap:user';
 
-/** Log in user by username */
-export async function login(username) {
+/** Log in user with username + password */
+export async function login(username, password) {
   const res = await fetch(`${API_URL}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username }),
+    body: JSON.stringify({ username, password }),
   });
 
   const data = await res.json();
@@ -22,12 +22,12 @@ export async function login(username) {
   return user;
 }
 
-/** Register new user by username */
-export async function register(username, avatarColor = '#C2A98B') {
+/** Register new user with username + password */
+export async function register(username, password, avatarColor = '#C2A98B') {
   const res = await fetch(`${API_URL}/api/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, avatarColor }),
+    body: JSON.stringify({ username, password, avatarColor }),
   });
 
   const data = await res.json();
