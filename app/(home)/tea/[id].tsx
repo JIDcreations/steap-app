@@ -11,6 +11,9 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import PostButton from '../../../components/PostButton';
+import { getCurrentUser } from '../../../data/auth';
+import { getFavorites, toggleFavorite } from '../../../data/favorites';
 import { COLORS, SPACING, TYPO } from '../../theme';
 
 // Adjust only this to move blob up/down
@@ -24,6 +27,11 @@ export default function TeaDetailScreen() {
   const [tea, setTea] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const [userId, setUserId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState<boolean>(false);
+
+  // load tea
   useEffect(() => {
     async function loadTea() {
       try {
@@ -40,6 +48,37 @@ export default function TeaDetailScreen() {
     }
     loadTea();
   }, [id]);
+
+  // load current user
+  useEffect(() => {
+    (async () => {
+      try {
+        const user = await getCurrentUser();
+        if (user?.id || user?._id) {
+          setUserId(user.id || user._id);
+        } else {
+          setUserId(null);
+        }
+      } catch (e) {
+        console.warn('Failed to load current user', e);
+      }
+    })();
+  }, []);
+
+  // sync isSaved met echte favorites wanneer user of tea verandert
+  useEffect(() => {
+    async function syncSaved() {
+      if (!userId || !tea?._id) return;
+      try {
+        const favs = await getFavorites(userId);
+        const exists = favs.some((t: any) => t._id === tea._id);
+        setIsSaved(exists);
+      } catch (e) {
+        console.warn('Failed to load favorites for detail', e);
+      }
+    }
+    syncSaved();
+  }, [userId, tea?._id]);
 
   if (loading) {
     return (
@@ -59,9 +98,23 @@ export default function TeaDetailScreen() {
 
   const bgColor = tea.color || COLORS.primaryDark;
   const rating = Math.max(0, Math.min(5, Number(tea.rating) || 0));
-
-  // iets kleinere offset → tijd/tekst wat hoger
   const bodyDynamicMarginTop = -BLOB_TOP + 10;
+
+  async function handleAddToLibrary() {
+    if (!userId || !tea?._id) return;
+
+    try {
+      setSaving(true);
+      const res = await toggleFavorite(userId, tea._id);
+      const favorites = (res.favorites as any[]) || [];
+      const nowSaved = favorites.some((t: any) => t._id === tea._id);
+      setIsSaved(nowSaved);
+    } catch (e) {
+      console.warn('Failed to toggle favorite from detail', e);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <ImageBackground
@@ -101,7 +154,7 @@ export default function TeaDetailScreen() {
             {/* CHIPS – 32px onder de titel */}
             <View style={styles.tagsRow}>
               {tea.moodTag ? (
-                <View className="tag" style={styles.tag}>
+                <View style={styles.tag}>
                   <Text style={styles.tagText}>{tea.moodTag}</Text>
                 </View>
               ) : null}
@@ -128,7 +181,7 @@ export default function TeaDetailScreen() {
           </View>
         </View>
 
-        {/* BODY – alleen dit deel scrollt */}
+        {/* BODY – scrollable */}
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={[styles.body, { marginTop: bodyDynamicMarginTop }]}>
             {/* tijd boven de lijn */}
@@ -157,10 +210,13 @@ export default function TeaDetailScreen() {
               </Text>
             )}
 
-            {/* button */}
-            <Pressable style={styles.libraryButton}>
-              <Text style={styles.libraryButtonText}>Add to library</Text>
-            </Pressable>
+            {/* Add to library button (component) */}
+            <PostButton
+              title={isSaved ? 'In your library' : 'Add to library'}
+              onPress={handleAddToLibrary}
+              loading={saving}
+              disabled={!userId}
+            />
           </View>
         </ScrollView>
       </View>
@@ -207,7 +263,6 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 
-  // 52px bold title
   title: {
     fontFamily: 'PlayfairDisplay-Bold',
     fontSize: 52,
@@ -253,7 +308,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
 
-  // timer gecentreerd
   metaRowCentered: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -277,19 +331,5 @@ const styles = StyleSheet.create({
     color: COLORS.primaryDark,
     lineHeight: 22,
     marginBottom: SPACING.xl,
-  },
-
-  libraryButton: {
-    backgroundColor: COLORS.accent,
-    borderRadius: 999,
-    paddingVertical: SPACING.lg,
-    alignItems: 'center',
-    marginTop: SPACING.lg,
-  },
-
-  libraryButtonText: {
-    ...TYPO.body,
-    color: '#ffffff',
-    fontWeight: '600',
   },
 });
