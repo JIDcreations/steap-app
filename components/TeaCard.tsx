@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef } from 'react';
 import {
   Animated,
+  GestureResponderEvent,
   ImageSourcePropType,
   Pressable,
   StyleSheet,
@@ -22,7 +23,7 @@ type Props = {
   color?: string;
   saved?: boolean;
   onToggleSaved?: () => void;
-  onPressCard?: () => void;   // ← NIEUW
+  onPressCard?: () => void;
 };
 
 export default function TeaCard({
@@ -57,7 +58,9 @@ export default function TeaCard({
     ],
   };
 
-  const handlePressSaved = () => {
+  const handlePressSaved = (event: GestureResponderEvent) => {
+    // voorkomen dat de tap ook de card-press triggert
+    event.stopPropagation();
     onToggleSaved?.();
   };
 

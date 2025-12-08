@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import TeaRowCard from '../../components/TeaRowCard';
 import { getCurrentUser, logout } from '../../data/auth';
-import { getFavorites } from '../../data/favorites';
+import { getFavorites, toggleFavorite } from '../../data/favorites';
 import { COLORS, SPACING, TYPO } from '../theme';
 
 export default function ProfileScreen() {
@@ -33,6 +33,7 @@ export default function ProfileScreen() {
   } = useMyTeas();
 
   const [savedCount, setSavedCount] = useState(0);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
   // auth-user uit AsyncStorage (ingelogde user)
   const [authUser, setAuthUser] = useState<any | null>(null);
@@ -42,14 +43,18 @@ export default function ProfileScreen() {
   const loadFavorites = useCallback(async () => {
     if (!userId) {
       setSavedCount(0);
+      setSavedIds(new Set());
       return;
     }
     try {
       const favs = await getFavorites(userId);
-      setSavedCount(Array.isArray(favs) ? favs.length : 0);
+      const list = Array.isArray(favs) ? favs : [];
+      setSavedCount(list.length);
+      setSavedIds(new Set(list.map((t: any) => t._id)));
     } catch (e) {
       console.warn('Failed to load favorites', e);
       setSavedCount(0);
+      setSavedIds(new Set());
     }
   }, [userId]);
 
@@ -59,13 +64,31 @@ export default function ProfileScreen() {
 
   const onRefresh = useCallback(() => {
     mutate();        // reload myTeas
-    loadFavorites(); // reload saved teas count
+    loadFavorites(); // reload saved teas count + ids
   }, [mutate, loadFavorites]);
 
   async function handleLogout() {
     await logout();
     router.replace('/login' as Href);
   }
+
+  // toggle favorite vanuit profile (plusje op rowcard)
+  const handleToggleSaved = useCallback(
+    async (teaId: string) => {
+      if (!userId) return;
+      try {
+        const res = await toggleFavorite(userId, teaId);
+        const favorites = Array.isArray(res.favorites) ? res.favorites : [];
+        setSavedCount(favorites.length);
+        setSavedIds(new Set(favorites.map((t: any) => t._id)));
+      } catch (e) {
+        console.warn('Failed to toggle favorite from profile', e);
+        // fallback: opnieuw laden
+        loadFavorites();
+      }
+    },
+    [userId, loadFavorites]
+  );
 
   // auth user ophalen telkens wanneer Profile in focus komt
   useFocusEffect(
@@ -357,8 +380,14 @@ export default function ProfileScreen() {
               typeName={tea.type?.name}
               rating={tea.rating}
               color={tea.color}
-              saved={false} // op profiel niet als "saved" tonen
-              onToggleSaved={undefined} // geen actie nodig hier
+              saved={savedIds.has(tea._id)}
+              onToggleSaved={() => handleToggleSaved(tea._id)}
+              onPressCard={() =>
+                router.push({
+                  pathname: '/tea/[id]',
+                  params: { id: tea._id },
+                })
+              }
             />
           ))
         ) : (
