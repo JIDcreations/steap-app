@@ -1,18 +1,35 @@
 // app/(home)/tea/[id].tsx
-import { useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ImageBackground, ScrollView, Text } from 'react-native';
+import {
+  ImageBackground,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING, TYPO } from '../../theme';
 
+// Adjust only this to move blob up/down
+const BLOB_TOP = -140;
+
 export default function TeaDetailScreen() {
-  const { id } = useLocalSearchParams();        // /tea/123
+  const { id } = useLocalSearchParams();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+
   const [tea, setTea] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadTea() {
       try {
-        const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/teas/${id}`);
+        const res = await fetch(
+          `${process.env.EXPO_PUBLIC_API_URL}/api/teas/${id}`
+        );
         const data = await res.json();
         setTea(data);
       } catch (e) {
@@ -24,60 +41,255 @@ export default function TeaDetailScreen() {
     loadTea();
   }, [id]);
 
-  if (loading) return <Text style={{ padding: 20 }}>Loading…</Text>;
-  if (!tea) return <Text style={{ padding: 20 }}>Tea not found</Text>;
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <Text style={{ color: COLORS.primaryDark }}>Loading…</Text>
+      </View>
+    );
+  }
+
+  if (!tea) {
+    return (
+      <View style={styles.centered}>
+        <Text style={{ color: COLORS.primaryDark }}>Tea not found</Text>
+      </View>
+    );
+  }
+
+  const bgColor = tea.color || COLORS.primaryDark;
+  const rating = Math.max(0, Math.min(5, Number(tea.rating) || 0));
+
+  // iets kleinere offset → tijd/tekst wat hoger
+  const bodyDynamicMarginTop = -BLOB_TOP + 10;
 
   return (
     <ImageBackground
       source={require('../../../assets/images/HomeBG.png')}
       style={{ flex: 1 }}
-      imageStyle={{ opacity: 0.45 }}
+      imageStyle={{ opacity: 0.2, resizeMode: 'cover' }}
     >
-      <ScrollView
-        contentContainerStyle={{
-          padding: SPACING.lg,
-          paddingBottom: SPACING.xl,
-        }}
-      >
-        {/* Titel */}
-        <Text
+      <View style={{ flex: 1 }}>
+        {/* HEADER (fixed) */}
+        <View
           style={[
-            TYPO.display1,
-            { color: COLORS.primaryDark, marginBottom: SPACING.md },
+            styles.header,
+            { paddingTop: insets.top + SPACING.lg },
           ]}
         >
-          {tea.name}
-        </Text>
+          {/* BLOB */}
+          <View
+            style={[
+              styles.headerBlob,
+              { backgroundColor: bgColor, top: BLOB_TOP },
+            ]}
+          />
 
-        {/* Type */}
-        <Text
-          style={{
-            fontSize: 16,
-            color: COLORS.primaryDark,
-            marginBottom: 12,
-          }}
-        >
-          {tea.type?.name || 'Unknown type'}
-        </Text>
+          {/* BACK */}
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.backButton}
+            hitSlop={10}
+          >
+            <Ionicons name="chevron-back" size={24} color="#D6F4CD" />
+          </Pressable>
 
-        {/* Rating */}
-        <Text
-          style={{
-            fontSize: 16,
-            color: COLORS.primaryDark,
-            marginBottom: 12,
-          }}
-        >
-          Rating: {tea.rating}
-        </Text>
+          {/* TITLE + TAGS + STARS */}
+          <View style={styles.titleBlock}>
+            <Text style={styles.title}>{tea.name || 'Unknown tea'}</Text>
 
-        {/* Note */}
-        {tea.note ? (
-          <Text style={{ fontSize: 15, color: COLORS.primaryDark }}>
-            {tea.note}
-          </Text>
-        ) : null}
-      </ScrollView>
+            {/* CHIPS – 32px onder de titel */}
+            <View style={styles.tagsRow}>
+              {tea.moodTag ? (
+                <View className="tag" style={styles.tag}>
+                  <Text style={styles.tagText}>{tea.moodTag}</Text>
+                </View>
+              ) : null}
+
+              {tea.type?.name ? (
+                <View style={styles.tag}>
+                  <Text style={styles.tagText}>{tea.type.name}</Text>
+                </View>
+              ) : null}
+            </View>
+
+            {/* STARS */}
+            <View style={styles.starsRow}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Ionicons
+                  key={i}
+                  name={i < rating ? 'star' : 'star-outline'}
+                  size={22}
+                  color="#D6F4CD"
+                  style={{ marginHorizontal: 2 }}
+                />
+              ))}
+            </View>
+          </View>
+        </View>
+
+        {/* BODY – alleen dit deel scrollt */}
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={[styles.body, { marginTop: bodyDynamicMarginTop }]}>
+            {/* tijd boven de lijn */}
+            <View style={styles.metaBlock}>
+              <View style={styles.metaRowCentered}>
+                <Ionicons
+                  name="time-outline"
+                  size={18}
+                  color={COLORS.primaryDark}
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={styles.metaText}>
+                  {tea.steepTime ? `${tea.steepTime} min` : 'Brew time unknown'}
+                </Text>
+              </View>
+
+              <View style={styles.metaLine} />
+            </View>
+
+            {/* description */}
+            {tea.note ? (
+              <Text style={styles.noteText}>{tea.note}</Text>
+            ) : (
+              <Text style={styles.noteText}>
+                No description yet for this tea.
+              </Text>
+            )}
+
+            {/* button */}
+            <Pressable style={styles.libraryButton}>
+              <Text style={styles.libraryButtonText}>Add to library</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </View>
     </ImageBackground>
   );
 }
+
+/* STYLES ------------------------------------------------------- */
+
+const styles = StyleSheet.create({
+  scrollContent: {
+    paddingBottom: SPACING.xl * 2,
+  },
+
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  header: {
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.lg,
+    justifyContent: 'flex-start',
+    paddingBottom: SPACING.lg,
+  },
+
+  headerBlob: {
+    position: 'absolute',
+    alignSelf: 'center',
+    width: '220%',
+    height: 540,
+    borderBottomLeftRadius: 540,
+    borderBottomRightRadius: 540,
+  },
+
+  backButton: {
+    marginBottom: SPACING.lg,
+    zIndex: 1,
+  },
+
+  titleBlock: {
+    alignItems: 'center',
+    zIndex: 1,
+  },
+
+  // 52px bold title
+  title: {
+    fontFamily: 'PlayfairDisplay-Bold',
+    fontSize: 52,
+    color: '#D6F4CD',
+    textAlign: 'center',
+    marginBottom: 32,
+    textTransform: 'lowercase',
+  },
+
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: SPACING.md,
+  },
+
+  tag: {
+    borderWidth: 1,
+    borderColor: '#FDFBFC',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+
+  tagText: {
+    fontSize: 16,
+    color: '#FDFBFC',
+  },
+
+  starsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: SPACING.sm,
+  },
+
+  body: {
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.lg,
+  },
+
+  metaBlock: {
+    marginBottom: SPACING.lg,
+  },
+
+  // timer gecentreerd
+  metaRowCentered: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+
+  metaText: {
+    ...TYPO.body,
+    color: COLORS.primaryDark,
+  },
+
+  metaLine: {
+    height: 1,
+    width: '100%',
+    backgroundColor: COLORS.primaryDark,
+  },
+
+  noteText: {
+    ...TYPO.body,
+    color: COLORS.primaryDark,
+    lineHeight: 22,
+    marginBottom: SPACING.xl,
+  },
+
+  libraryButton: {
+    backgroundColor: COLORS.accent,
+    borderRadius: 999,
+    paddingVertical: SPACING.lg,
+    alignItems: 'center',
+    marginTop: SPACING.lg,
+  },
+
+  libraryButtonText: {
+    ...TYPO.body,
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+});
