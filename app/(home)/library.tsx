@@ -1,5 +1,6 @@
 // app/(home)/library.tsx
 
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ImageBackground,
@@ -11,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getCurrentUser } from '../../data/auth';
-import { getFavorites } from '../../data/favorites';
+import { getFavorites, toggleFavorite } from '../../data/favorites';
 import { COLORS, SPACING, TYPO } from '../theme';
 
 // Components
@@ -22,6 +23,7 @@ import TeaCard from '../../components/TeaCard';
 
 export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const { items: teaTypes } = useTeaTypes();
 
@@ -62,6 +64,23 @@ export default function LibraryScreen() {
 
   const onRefresh = () => loadFavorites();
 
+  // FAVORITE TOGGLE (check icon)
+  const handleToggleSaved = useCallback(
+    async (teaId: string) => {
+      if (!userId) return;
+      try {
+        const res = await toggleFavorite(userId, teaId);
+        const next = Array.isArray(res.favorites) ? res.favorites : [];
+        setFavorites(next);
+      } catch (e) {
+        console.warn('Failed to toggle favorite in library', e);
+        // fallback: herladen
+        loadFavorites();
+      }
+    },
+    [userId, loadFavorites]
+  );
+
   // FILTERING
   const filtered = useMemo(() => {
     if (!favorites) return [];
@@ -74,7 +93,10 @@ export default function LibraryScreen() {
       const type = (t.type?.name ?? '').toLowerCase();
 
       const matchesText =
-        !needle || name.includes(needle) || note.includes(needle) || type.includes(needle);
+        !needle ||
+        name.includes(needle) ||
+        note.includes(needle) ||
+        type.includes(needle);
 
       const matchesType =
         !selectedType || type === selectedType.toLowerCase();
@@ -91,7 +113,9 @@ export default function LibraryScreen() {
     >
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={isLoading} onRefresh={onRefresh} />
+        }
         contentContainerStyle={{
           paddingHorizontal: SPACING.lg,
           paddingTop: insets.top + SPACING.lg,
@@ -139,7 +163,9 @@ export default function LibraryScreen() {
                 label={type.name}
                 active={selectedType === type.name}
                 onPress={() =>
-                  setSelectedType(selectedType === type.name ? null : type.name)
+                  setSelectedType(
+                    selectedType === type.name ? null : type.name
+                  )
                 }
               />
             ))}
@@ -159,7 +185,7 @@ export default function LibraryScreen() {
               key={tea._id}
               style={{
                 width: '48%',
-                marginBottom: 20, // ← 20px spacing tussen kaarten
+                marginBottom: 20, // 20px spacing tussen kaarten
               }}
             >
               <TeaCard
@@ -167,8 +193,14 @@ export default function LibraryScreen() {
                 typeName={tea.type?.name}
                 rating={tea.rating}
                 color={tea.color}
-                saved={true}       // In Library is alles saved
-                onToggleSaved={() => {}} // Geen toggle hier
+                saved={true} // in Library is alles saved
+                onToggleSaved={() => handleToggleSaved(tea._id)}
+                onPressCard={() =>
+                  router.push({
+                    pathname: '/tea/[id]',
+                    params: { id: tea._id },
+                  })
+                }
               />
             </View>
           ))}
