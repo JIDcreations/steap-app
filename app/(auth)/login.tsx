@@ -7,13 +7,13 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
-  View,
+  View
 } from 'react-native';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { AuthButton } from '../../components/AuthButton';
+import { PasswordInput } from '../../components/PasswordInput';
 import { UsernameInput } from '../../components/UsernameInput';
 import { login } from '../../data/auth';
 import { COLORS, FONTS, SPACING, TYPO } from '../theme';
@@ -83,16 +83,12 @@ export default function LoginScreen() {
                 onSubmit={handleLogin}
               />
 
-              {/* Password input */}
-              <TextInput
+              {/* Password input component */}
+              <PasswordInput
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Password"
-                secureTextEntry
-                autoCapitalize="none"
-                style={styles.passwordInput}
-                returnKeyType="done"
-                onSubmitEditing={handleLogin}
+                onSubmit={handleLogin}
               />
 
               <AuthButton

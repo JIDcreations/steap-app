@@ -7,13 +7,13 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { AuthButton } from '../../components/AuthButton';
+import { PasswordInput } from '../../components/PasswordInput';
 import { UsernameInput } from '../../components/UsernameInput';
 import { register } from '../../data/auth';
 import { COLORS, FONTS, SPACING, TYPO } from '../theme';
@@ -95,25 +95,18 @@ export default function RegisterScreen() {
                 onSubmit={handleRegister}
               />
 
-              <TextInput
+              <PasswordInput
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Choose a password"
-                secureTextEntry
-                autoCapitalize="none"
-                style={styles.passwordInput}
-                returnKeyType="next"
+                onSubmit={handleRegister}
               />
 
-              <TextInput
+              <PasswordInput
                 value={passwordRepeat}
                 onChangeText={setPasswordRepeat}
                 placeholder="Repeat your password"
-                secureTextEntry
-                autoCapitalize="none"
-                style={styles.passwordInput}
-                returnKeyType="done"
-                onSubmitEditing={handleRegister}
+                onSubmit={handleRegister}
               />
 
               <AuthButton
@@ -186,15 +179,6 @@ const styles = StyleSheet.create({
 
   formBlock: {
     gap: 30,
-  },
-
-  passwordInput: {
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    borderRadius: 999,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    ...TYPO.body,
-    color: '#ffffff',
   },
 
   error: {
