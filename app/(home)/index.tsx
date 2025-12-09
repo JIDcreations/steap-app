@@ -66,12 +66,19 @@ export default function HomeScreen() {
     async (teaId: string) => {
       if (!userId) return;
 
-      // optimistic UI
-      setSavedIds(prev => {
-        const next = new Set(prev);
-        next.has(teaId) ? next.delete(teaId) : next.add(teaId);
-        return next;
-      });
+    
+     // optimistic UI
+setSavedIds(prev => {
+  const next = new Set(prev);
+
+  if (next.has(teaId)) {
+    next.delete(teaId);
+  } else {
+    next.add(teaId);
+  }
+
+  return next;
+});
 
       try {
         const res = await toggleFavorite(userId, teaId);
@@ -184,7 +191,13 @@ export default function HomeScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={{ marginBottom: SPACING.lg }}
+          style={{
+            marginBottom: SPACING.lg,
+            marginHorizontal: -SPACING.lg, // buiten de page padding
+          }}
+          contentContainerStyle={{
+            paddingHorizontal: SPACING.lg, // zelfde gutter behouden
+          }}
         >
           <View style={{ flexDirection: 'row' }}>
             <Chip
@@ -208,46 +221,46 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
 
-       {/* Teacards – horizontale scroller */}
-{filtered && filtered.length > 0 ? (
-  <ScrollView
-    horizontal
-    showsHorizontalScrollIndicator={false}
-    style={{
-      marginBottom: SPACING.xl,
-      marginHorizontal: -SPACING.lg, // padding van de parent neutraliseren
-    }}
-    contentContainerStyle={{
-      paddingHorizontal: SPACING.lg, // toch nog dezelfde “gutter” behouden
-    }}
-  >
-    <View style={{ flexDirection: 'row' }}>
-      {filtered.map((tea: any) => (
-        <TeaCard
-          key={tea._id}
-          name={tea.name}
-          typeName={tea.type?.name}
-          rating={tea.rating}
-          color={tea.color}
-          saved={isSaved(tea._id)}
-          onToggleSaved={() => handleToggleSaved(tea._id)}
-          onPressCard={() =>
-            router.push({
-              pathname: '/tea/[id]',
-              params: { id: tea._id },
-            })
-          }
-        />
-      ))}
-    </View>
-  </ScrollView>
-) : (
-  <View style={{ paddingTop: 24 }}>
-    <Text style={{ color: COLORS.textSoft }}>
-      No teas match your filters.
-    </Text>
-  </View>
-)}
+        {/* Teacards – horizontale scroller */}
+        {filtered && filtered.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{
+              marginBottom: SPACING.xl,
+              marginHorizontal: -SPACING.lg, // padding van de parent neutraliseren
+            }}
+            contentContainerStyle={{
+              paddingHorizontal: SPACING.lg, // toch nog dezelfde “gutter” behouden
+            }}
+          >
+            <View style={{ flexDirection: 'row' }}>
+              {filtered.map((tea: any) => (
+                <TeaCard
+                  key={tea._id}
+                  name={tea.name}
+                  typeName={tea.type?.name}
+                  rating={tea.rating}
+                  color={tea.color}
+                  saved={isSaved(tea._id)}
+                  onToggleSaved={() => handleToggleSaved(tea._id)}
+                  onPressCard={() =>
+                    router.push({
+                      pathname: '/tea/[id]',
+                      params: { id: tea._id },
+                    })
+                  }
+                />
+              ))}
+            </View>
+          </ScrollView>
+        ) : (
+          <View style={{ paddingTop: 24 }}>
+            <Text style={{ color: COLORS.textSoft }}>
+              No teas match your filters.
+            </Text>
+          </View>
+        )}
 
         {/* Recently posted — verticale wide cards */}
         {recentTeas.length > 0 && (
