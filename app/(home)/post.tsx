@@ -3,7 +3,13 @@
 import { ThemedText } from '@/components/themed-text';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Animated,
   ImageBackground,
@@ -57,27 +63,30 @@ export default function PostTea() {
   const [successName, setSuccessName] = useState<string | null>(null);
   const toastAnim = useRef(new Animated.Value(0)).current;
 
-  const showSuccessToast = useCallback((teaName?: string) => {
-    setSuccessName(teaName ?? null);
-    setSuccessVisible(true);
-    toastAnim.setValue(0);
+  const showSuccessToast = useCallback(
+    (teaName?: string) => {
+      setSuccessName(teaName ?? null);
+      setSuccessVisible(true);
+      toastAnim.setValue(0);
 
-    Animated.timing(toastAnim, {
-      toValue: 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      setTimeout(() => {
-        Animated.timing(toastAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }).start(() => {
-          setSuccessVisible(false);
-        });
-      }, 1400);
-    });
-  }, [toastAnim]);
+      Animated.timing(toastAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        setTimeout(() => {
+          Animated.timing(toastAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            setSuccessVisible(false);
+          });
+        }, 1400);
+      });
+    },
+    [toastAnim]
+  );
 
   useEffect(() => {
     (async () => {
@@ -114,7 +123,7 @@ export default function PostTea() {
     }
   }, [typesLoading, teaTypes, typeId]);
 
-  const { trigger, isMutating, error, data } = useTeaPost();
+  const { trigger, isMutating, error } = useTeaPost();
 
   const canSubmit = useMemo(() => {
     if (!userId) return false;
@@ -421,15 +430,10 @@ export default function PostTea() {
             loading={isMutating}
           />
 
-          {/* FEEDBACK (optioneel laten staan, kan weg als je wil) */}
+          {/* Error feedback */}
           {error ? (
             <ThemedText style={{ marginTop: 8, color: 'red' }}>
               {String(error)}
-            </ThemedText>
-          ) : null}
-          {data ? (
-            <ThemedText style={{ marginTop: 8 }}>
-              Created: {data?.name} (id: {data?._id})
             </ThemedText>
           ) : null}
         </ScrollView>
