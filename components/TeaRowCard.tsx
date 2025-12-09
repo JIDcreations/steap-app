@@ -35,13 +35,7 @@ export default function TeaRowCard({
   onToggleSaved,
   onPressCard,
 }: Props) {
-  const handlePressSaved = (event: GestureResponderEvent) => {
-    // voorkomen dat de tap ook de card-press triggert
-    event.stopPropagation();
-    onToggleSaved?.();
-  };
-
-  // zelfde animatie-setup als TeaCard
+  // rotatie voor de flower (zoals bij verticale kaart)
   const rotation = useRef(new Animated.Value(saved ? 1 : 0)).current;
 
   useEffect(() => {
@@ -62,6 +56,31 @@ export default function TeaRowCard({
         }),
       },
     ],
+  };
+
+  // scale-pop animatie voor de add/check button
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const animatePop = () => {
+    Animated.sequence([
+      Animated.timing(scale, {
+        toValue: 1.15,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handlePressSaved = (event: GestureResponderEvent) => {
+    // voorkomen dat de tap ook de card-press triggert
+    event.stopPropagation();
+    animatePop();
+    onToggleSaved?.();
   };
 
   return (
@@ -104,11 +123,13 @@ export default function TeaRowCard({
         hitSlop={10}
         style={[styles.addButton, saved && styles.addButtonSaved]}
       >
-        <Ionicons
-          name={saved ? 'checkmark' : 'add'}
-          size={20}
-          color={COLORS.primaryDark}
-        />
+        <Animated.View style={{ transform: [{ scale }] }}>
+          <Ionicons
+            name={saved ? 'checkmark' : 'add'}
+            size={22}
+            color={saved ? '#ffffff' : COLORS.primaryDark}
+          />
+        </Animated.View>
       </Pressable>
     </Pressable>
   );
@@ -185,9 +206,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 2,
+    // geen border in unselected state
   },
 
   addButtonSaved: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.primaryDark,
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
 });

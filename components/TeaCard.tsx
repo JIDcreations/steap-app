@@ -18,7 +18,7 @@ const LEAF_IMG: ImageSourcePropType = require('../assets/images/Leaf1.png');
 
 type Props = {
   name: string;
-  typeName?: string;   // mood label ("Calming Green")
+  typeName?: string;
   rating?: number;
   color?: string;
   saved?: boolean;
@@ -35,7 +35,7 @@ export default function TeaCard({
   onToggleSaved,
   onPressCard,
 }: Props) {
-  // Animated value for leaf rotation (0 = normaal, 1 = licht naar links)
+  // Rotatie van de leaf illustratie
   const rotation = useRef(new Animated.Value(saved ? 1 : 0)).current;
 
   useEffect(() => {
@@ -58,9 +58,27 @@ export default function TeaCard({
     ],
   };
 
+  // Pop-animatie voor het plus/check icoon
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const animatePop = () => {
+    Animated.sequence([
+      Animated.timing(scale, {
+        toValue: 1.15,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
   const handlePressSaved = (event: GestureResponderEvent) => {
-    // voorkomen dat de tap ook de card-press triggert
-    event.stopPropagation();
+    event.stopPropagation(); // voorkom dat card geopend wordt
+    animatePop();
     onToggleSaved?.();
   };
 
@@ -75,12 +93,10 @@ export default function TeaCard({
     >
       {/* Tekstblok */}
       <View style={styles.textContainer}>
-        {/* Thee naam */}
         <Text style={styles.name} numberOfLines={2}>
           {name}
         </Text>
 
-        {/* Mood label */}
         <Text style={styles.mood} numberOfLines={1}>
           {typeName || 'Unknown type'}
         </Text>
@@ -99,20 +115,22 @@ export default function TeaCard({
         </View>
       </View>
 
-      {/* Leaf illustratie met animatie */}
+      {/* Leaf illustratie */}
       <Animated.Image source={LEAF_IMG} style={[styles.leaf, rotateStyle]} />
 
-      {/* Plus / saved button */}
+      {/* Add / Saved knop */}
       <Pressable
         onPress={handlePressSaved}
         hitSlop={10}
         style={[styles.addButton, saved && styles.addButtonSaved]}
       >
-        <Ionicons
-          name={saved ? 'checkmark' : 'add'}
-          size={22}
-          color={COLORS.primaryDark}
-        />
+        <Animated.View style={{ transform: [{ scale }] }}>
+          <Ionicons
+            name={saved ? 'checkmark' : 'add'}
+            size={22}
+            color={saved ? '#ffffff' : COLORS.primaryDark}
+          />
+        </Animated.View>
       </Pressable>
     </Pressable>
   );
@@ -124,7 +142,7 @@ const styles = StyleSheet.create({
   card: {
     width: 165,
     height: 205,
-    backgroundColor: COLORS.teaCardDark, // default fallback
+    backgroundColor: COLORS.teaCardDark,
     borderRadius: CARD_RADIUS,
     paddingHorizontal: SPACING.md,
     paddingTop: SPACING.md,
@@ -140,7 +158,7 @@ const styles = StyleSheet.create({
   },
 
   name: {
-    fontFamily: FONTS.heading,   // PlayfairDisplay-Bold
+    fontFamily: FONTS.heading,
     fontSize: 32,
     lineHeight: 34,
     color: COLORS.teaCardText,
@@ -189,6 +207,8 @@ const styles = StyleSheet.create({
   },
 
   addButtonSaved: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.primaryDark,
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
 });
