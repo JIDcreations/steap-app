@@ -7,7 +7,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ImageBackground,
   ScrollView,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -22,7 +21,6 @@ import useTeaPost from '../../data/tea-post';
 import useTeaTypes from '../../data/tea-types';
 import { COLORS, SPACING, TYPO } from '../theme';
 
-
 const COLOR_SWATCHES = [
   '#b0a09bff',
   '#C2A98B',
@@ -32,6 +30,7 @@ const COLOR_SWATCHES = [
   '#243235',
   '#040403',
 ] as const;
+
 const MOODS = ['calming', 'energizing', 'cozy', 'focus'] as const;
 
 const SEED_USER_ID = '68deb78dd1fb610db1c307f8';
@@ -51,7 +50,6 @@ export default function PostTea() {
     useState<(typeof COLOR_SWATCHES)[number] | null>(COLOR_SWATCHES[1]);
   const [moodTag, setMoodTag] =
     useState<(typeof MOODS)[number] | null>('cozy');
-  const [isPublic, setIsPublic] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -125,7 +123,6 @@ export default function PostTea() {
       note: note.trim() || undefined,
       color: color ?? undefined,
       moodTag: (moodTag as any) ?? undefined,
-      public: isPublic,
       user: uid,
     });
 
@@ -143,7 +140,6 @@ export default function PostTea() {
     note,
     color,
     moodTag,
-    isPublic,
   ]);
 
   if (!booted) return <ThemedText>Loading user…</ThemedText>;
@@ -164,10 +160,8 @@ export default function PostTea() {
           paddingBottom: SPACING.xl,
         }}
       >
-        {/* Titel */}
-        <View
-          style={{ alignItems: 'center', marginBottom: SPACING.xl }}
-        >
+        {/* TITLE */}
+        <View style={{ alignItems: 'center', marginBottom: SPACING.xl }}>
           <Text
             style={[
               TYPO.display1,
@@ -211,10 +205,7 @@ export default function PostTea() {
             </Text>
           )}
           {!typesLoading && !typesError && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-            >
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={{ flexDirection: 'row' }}>
                 {(teaTypes as any[]).map((t: any) => (
                   <Chip
@@ -231,14 +222,14 @@ export default function PostTea() {
 
         {/* STEAP TIME */}
         <FormField
-          label="Steap Time (min)"
+          label="Infusion time (min)"
           value={steepTime}
           onChangeText={setSteepTime}
           placeholder="3"
           keyboardType="number-pad"
         />
 
-        {/* RATING – sterren */}
+        {/* RATING */}
         <View style={{ marginBottom: SPACING.md }}>
           <Text
             style={{
@@ -261,11 +252,7 @@ export default function PostTea() {
                   <Ionicons
                     name={active ? 'star' : 'star-outline'}
                     size={24}
-                    color={
-                      active
-                        ? COLORS.primaryDark
-                        : COLORS.accent
-                    }
+                    color={active ? COLORS.primaryDark : COLORS.accent}
                   />
                 </TouchableOpacity>
               );
@@ -339,7 +326,7 @@ export default function PostTea() {
           </ScrollView>
         </View>
 
-        {/* MOOD / VIBE */}
+        {/* MOOD TAG */}
         <View style={{ marginBottom: SPACING.lg }}>
           <Text
             style={{
@@ -350,19 +337,14 @@ export default function PostTea() {
           >
             Vibe
           </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-          >
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={{ flexDirection: 'row' }}>
               {MOODS.map(m => {
                 const active = m === moodTag;
                 return (
                   <Chip
                     key={m}
-                    label={
-                      m.charAt(0).toUpperCase() + m.slice(1)
-                    }
+                    label={m.charAt(0).toUpperCase() + m.slice(1)}
                     active={active}
                     onPress={() => setMoodTag(m)}
                   />
@@ -372,33 +354,13 @@ export default function PostTea() {
           </ScrollView>
         </View>
 
-        {/* PUBLIC */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: SPACING.lg,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 14,
-              color: COLORS.primaryDark,
-              marginRight: 8,
-            }}
-          >
-            Public
-          </Text>
-          <Switch value={isPublic} onValueChange={setIsPublic} />
-        </View>
-
         {/* SUBMIT */}
-       <PostButton
-  title="Post Tea"
-  onPress={onCreateTea}
-  disabled={!canSubmit}
-  loading={isMutating}
-/>
+        <PostButton
+          title="Post Tea"
+          onPress={onCreateTea}
+          disabled={!canSubmit}
+          loading={isMutating}
+        />
 
         {/* FEEDBACK */}
         {error ? (
