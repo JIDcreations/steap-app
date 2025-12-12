@@ -3,13 +3,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   ImageBackground,
@@ -52,11 +46,21 @@ export default function PostTea() {
   const [typeId, setTypeId] = useState<string | null>(null);
   const [steepTime, setSteepTime] = useState<string>('3');
   const [rating, setRating] = useState<string>('3');
+
+  // How was it?
   const [note, setNote] = useState<string>('');
+
   const [color, setColor] =
     useState<(typeof COLOR_SWATCHES)[number] | null>(COLOR_SWATCHES[1]);
   const [moodTag, setMoodTag] =
     useState<(typeof MOODS)[number] | null>('cozy');
+
+  // Recipe state
+  const [recipeIngredients, setRecipeIngredients] = useState<string>('');
+  const [recipeWaterMl, setRecipeWaterMl] = useState<string>('');
+  const [recipeTempC, setRecipeTempC] = useState<string>('');
+  const [recipeAmount, setRecipeAmount] = useState<string>('');
+  const [recipeSteps, setRecipeSteps] = useState<string>('');
 
   // Toast state
   const [successVisible, setSuccessVisible] = useState(false);
@@ -159,18 +163,33 @@ export default function PostTea() {
         steepTime: st,
         rating: rt,
         note: note.trim() || undefined,
+        recipe: {
+          ingredients: recipeIngredients
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean),
+          waterMl: recipeWaterMl ? Number(recipeWaterMl) : undefined,
+          tempC: recipeTempC ? Number(recipeTempC) : undefined,
+          amount: recipeAmount.trim() || undefined,
+          steps: recipeSteps.trim() || undefined,
+        },
         color: color ?? undefined,
         moodTag: (moodTag as any) ?? undefined,
         user: uid,
       });
 
-      // Form resetten
+      // Form reset
       setName('');
       setSteepTime('3');
       setRating('3');
       setNote('');
 
-      // Styled toast tonen
+      setRecipeIngredients('');
+      setRecipeWaterMl('');
+      setRecipeTempC('');
+      setRecipeAmount('');
+      setRecipeSteps('');
+
       showSuccessToast(created?.name);
     } catch (e) {
       console.warn('Failed to create tea', e);
@@ -183,6 +202,11 @@ export default function PostTea() {
     steepTime,
     rating,
     note,
+    recipeIngredients,
+    recipeWaterMl,
+    recipeTempC,
+    recipeAmount,
+    recipeSteps,
     color,
     moodTag,
     showSuccessToast,
@@ -215,16 +239,11 @@ export default function PostTea() {
           }}
         >
           {/* Titel */}
-          <View
-            style={{ alignItems: 'center', marginBottom: SPACING.xl }}
-          >
+          <View style={{ alignItems: 'center', marginBottom: SPACING.xl }}>
             <Text
               style={[
                 TYPO.display1,
-                {
-                  color: COLORS.primaryDark,
-                  textTransform: 'none',
-                },
+                { color: COLORS.primaryDark, textTransform: 'none' },
               ]}
             >
               Post Tea
@@ -250,21 +269,17 @@ export default function PostTea() {
             >
               Type
             </Text>
+
             {typesLoading && (
-              <Text style={{ color: COLORS.primaryDark }}>
-                Loading types…
-              </Text>
+              <Text style={{ color: COLORS.primaryDark }}>Loading types…</Text>
             )}
+
             {typesError && (
-              <Text style={{ color: 'red' }}>
-                Failed to load tea types
-              </Text>
+              <Text style={{ color: 'red' }}>Failed to load tea types</Text>
             )}
+
             {!typesLoading && !typesError && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-              >
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={{ flexDirection: 'row' }}>
                   {(teaTypes as any[]).map((t: any) => (
                     <Chip
@@ -279,9 +294,9 @@ export default function PostTea() {
             )}
           </View>
 
-          {/* STEAP TIME */}
+          {/* STEEP TIME */}
           <FormField
-            label="Steap Time (min)"
+            label="Steep Time (min)"
             value={steepTime}
             onChangeText={setSteepTime}
             placeholder="3"
@@ -311,11 +326,7 @@ export default function PostTea() {
                     <Ionicons
                       name={active ? 'star' : 'star-outline'}
                       size={24}
-                      color={
-                        active
-                          ? COLORS.primaryDark
-                          : COLORS.accent
-                      }
+                      color={active ? COLORS.primaryDark : COLORS.accent}
                     />
                   </TouchableOpacity>
                 );
@@ -323,7 +334,7 @@ export default function PostTea() {
             </View>
           </View>
 
-          {/* NOTE */}
+          {/* RECIPE */}
           <View style={{ marginBottom: SPACING.md }}>
             <Text
               style={{
@@ -332,7 +343,108 @@ export default function PostTea() {
                 marginBottom: 6,
               }}
             >
-              Note
+              Recipe
+            </Text>
+
+            <TextInput
+              value={recipeIngredients}
+              onChangeText={setRecipeIngredients}
+              placeholder="Ingredients (comma separated) e.g. mint, ginger, green tea"
+              placeholderTextColor={COLORS.textSoft}
+              style={{
+                borderWidth: 1,
+                borderColor: COLORS.primaryDark,
+                borderRadius: 8,
+                paddingHorizontal: SPACING.md,
+                backgroundColor: 'transparent',
+                paddingVertical: 10,
+                marginBottom: 10,
+              }}
+            />
+
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
+              <View style={{ flex: 1 }}>
+                <TextInput
+                  value={recipeWaterMl}
+                  onChangeText={setRecipeWaterMl}
+                  placeholder="Water (ml)"
+                  placeholderTextColor={COLORS.textSoft}
+                  keyboardType="number-pad"
+                  style={{
+                    borderWidth: 1,
+                    borderColor: COLORS.primaryDark,
+                    borderRadius: 8,
+                    paddingHorizontal: SPACING.md,
+                    backgroundColor: 'transparent',
+                    paddingVertical: 10,
+                  }}
+                />
+              </View>
+
+              <View style={{ flex: 1 }}>
+                <TextInput
+                  value={recipeTempC}
+                  onChangeText={setRecipeTempC}
+                  placeholder="Temp (°C)"
+                  placeholderTextColor={COLORS.textSoft}
+                  keyboardType="number-pad"
+                  style={{
+                    borderWidth: 1,
+                    borderColor: COLORS.primaryDark,
+                    borderRadius: 8,
+                    paddingHorizontal: SPACING.md,
+                    backgroundColor: 'transparent',
+                    paddingVertical: 10,
+                  }}
+                />
+              </View>
+            </View>
+
+            <TextInput
+              value={recipeAmount}
+              onChangeText={setRecipeAmount}
+              placeholder="Amount e.g. 2g / 1 tsp / 1 bag"
+              placeholderTextColor={COLORS.textSoft}
+              style={{
+                borderWidth: 1,
+                borderColor: COLORS.primaryDark,
+                borderRadius: 8,
+                paddingHorizontal: SPACING.md,
+                backgroundColor: 'transparent',
+                paddingVertical: 10,
+                marginBottom: 10,
+              }}
+            />
+
+            <TextInput
+              value={recipeSteps}
+              onChangeText={setRecipeSteps}
+              placeholder="Steps (optional)"
+              placeholderTextColor={COLORS.textSoft}
+              multiline
+              style={{
+                borderWidth: 1,
+                borderColor: COLORS.primaryDark,
+                borderRadius: 8,
+                paddingHorizontal: SPACING.md,
+                backgroundColor: 'transparent',
+                minHeight: 90,
+                paddingVertical: 10,
+                textAlignVertical: 'top',
+              }}
+            />
+          </View>
+
+          {/* HOW WAS IT */}
+          <View style={{ marginBottom: SPACING.md }}>
+            <Text
+              style={{
+                fontSize: 14,
+                color: COLORS.primaryDark,
+                marginBottom: 6,
+              }}
+            >
+              How was it?
             </Text>
             <TextInput
               value={note}
@@ -400,19 +512,14 @@ export default function PostTea() {
             >
               Vibe
             </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-            >
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={{ flexDirection: 'row' }}>
                 {MOODS.map(m => {
                   const active = m === moodTag;
                   return (
                     <Chip
                       key={m}
-                      label={
-                        m.charAt(0).toUpperCase() + m.slice(1)
-                      }
+                      label={m.charAt(0).toUpperCase() + m.slice(1)}
                       active={active}
                       onPress={() => setMoodTag(m)}
                     />
@@ -473,9 +580,7 @@ export default function PostTea() {
                 marginLeft: 8,
               }}
             >
-              {successName
-                ? `“${successName}” has been posted`
-                : 'Tea posted'}
+              {successName ? `“${successName}” has been posted` : 'Tea posted'}
             </Text>
           </Animated.View>
         )}

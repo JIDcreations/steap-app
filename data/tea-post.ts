@@ -12,11 +12,18 @@ export type TeaCreate = {
   steepTime: number;       // minutes
   rating?: number;         // 1..5
   note?: string;
-  color?: string;          // one of your 5 hex values
+
+  recipe?: {
+    ingredients?: string[];
+    waterMl?: number;
+    tempC?: number;
+    amount?: string;
+    steps?: string;
+  };
+
+  color?: string;          // one of your hex values
   moodTag?: Mood;
   public?: boolean;
-  // vroeger: user: string;  // User _id
-  // user is niet meer nodig in de UI, we halen de userId uit AsyncStorage
   user?: string;
 };
 
@@ -34,14 +41,13 @@ export type TeaResponse = {
 
 export default function useTeaPost() {
   const { trigger, data, error, isMutating } = useSWRMutation<
-    TeaResponse,            // data returned by API
-    any,                    // error type
-    string,                 // key type
-    TeaCreate               // arg type passed to trigger(...)
+    TeaResponse,
+    any,
+    string,
+    TeaCreate
   >(
     `${API_URL}/teas`,
     async (url: string, { arg }: { arg: TeaCreate }) => {
-      // haal de ingelogde user op uit AsyncStorage
       const user = await getCurrentUser();
       if (!user) {
         throw new Error('Not logged in');
@@ -49,7 +55,6 @@ export default function useTeaPost() {
 
       const payload = {
         ...arg,
-        // backend verwacht userId in body
         userId: user.id || user._id,
       };
 
