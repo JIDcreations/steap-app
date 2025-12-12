@@ -210,6 +210,57 @@ export default function TeaDetailScreen() {
               </Text>
             )}
 
+            {/* RECIPE (only on detail) */}
+            {tea.recipe ? (
+              <View style={styles.recipeBlock}>
+                <Text style={styles.recipeTitle}>Recipe</Text>
+
+                {Array.isArray(tea.recipe.ingredients) &&
+                tea.recipe.ingredients.length > 0 ? (
+                  <View style={styles.recipeRow}>
+                    <Text style={styles.recipeLabel}>Ingredients</Text>
+                    <Text style={styles.recipeValue}>
+                      {tea.recipe.ingredients.join(', ')}
+                    </Text>
+                  </View>
+                ) : null}
+
+                {typeof tea.recipe.amount === 'string' &&
+                tea.recipe.amount.trim().length > 0 ? (
+                  <View style={styles.recipeRow}>
+                    <Text style={styles.recipeLabel}>Amount</Text>
+                    <Text style={styles.recipeValue}>{tea.recipe.amount}</Text>
+                  </View>
+                ) : null}
+
+                {(typeof tea.recipe.waterMl === 'number' &&
+                  Number.isFinite(tea.recipe.waterMl)) ||
+                (typeof tea.recipe.tempC === 'number' &&
+                  Number.isFinite(tea.recipe.tempC)) ? (
+                  <View style={styles.recipeRow}>
+                    <Text style={styles.recipeLabel}>Water</Text>
+                    <Text style={styles.recipeValue}>
+                      {typeof tea.recipe.waterMl === 'number'
+                        ? `${tea.recipe.waterMl} ml`
+                        : '—'}
+                      {'  ·  '}
+                      {typeof tea.recipe.tempC === 'number'
+                        ? `${tea.recipe.tempC}°C`
+                        : '—'}
+                    </Text>
+                  </View>
+                ) : null}
+
+                {typeof tea.recipe.steps === 'string' &&
+                tea.recipe.steps.trim().length > 0 ? (
+                  <View style={styles.recipeRow}>
+                    <Text style={styles.recipeLabel}>Steps</Text>
+                    <Text style={styles.recipeValue}>{tea.recipe.steps}</Text>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+
             {/* Add to library button (component) */}
             <PostButton
               title={isSaved ? 'In your library' : 'Add to library'}
@@ -330,6 +381,37 @@ const styles = StyleSheet.create({
     ...TYPO.body,
     color: COLORS.primaryDark,
     lineHeight: 22,
+    marginBottom: SPACING.lg,
+  },
+
+  recipeBlock: {
+    borderWidth: 1,
+    borderColor: COLORS.primaryDark,
+    borderRadius: 12,
+    padding: SPACING.md,
     marginBottom: SPACING.xl,
+  },
+
+  recipeTitle: {
+    ...TYPO.cardTitle,
+    color: COLORS.primaryDark,
+    marginBottom: SPACING.sm,
+  },
+
+  recipeRow: {
+    marginTop: SPACING.sm,
+  },
+
+  recipeLabel: {
+    fontSize: 13,
+    color: COLORS.primaryDark,
+    opacity: 0.8,
+    marginBottom: 4,
+  },
+
+  recipeValue: {
+    ...TYPO.body,
+    color: COLORS.primaryDark,
+    lineHeight: 20,
   },
 });
