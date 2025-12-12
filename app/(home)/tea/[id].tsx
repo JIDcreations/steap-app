@@ -122,14 +122,14 @@ export default function TeaDetailScreen() {
       style={{ flex: 1 }}
       imageStyle={{ opacity: 0.2, resizeMode: 'cover' }}
     >
-      <View style={{ flex: 1 }}>
-        {/* HEADER (fixed) */}
-        <View
-          style={[
-            styles.header,
-            { paddingTop: insets.top + SPACING.lg },
-          ]}
-        >
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + SPACING.lg },
+        ]}
+      >
+        {/* HEADER (now scrolls) */}
+        <View style={styles.header}>
           {/* BLOB */}
           <View
             style={[
@@ -151,7 +151,6 @@ export default function TeaDetailScreen() {
           <View style={styles.titleBlock}>
             <Text style={styles.title}>{tea.name || 'Unknown tea'}</Text>
 
-            {/* CHIPS – 32px onder de titel */}
             <View style={styles.tagsRow}>
               {tea.moodTag ? (
                 <View style={styles.tag}>
@@ -166,7 +165,6 @@ export default function TeaDetailScreen() {
               ) : null}
             </View>
 
-            {/* STARS */}
             <View style={styles.starsRow}>
               {Array.from({ length: 5 }).map((_, i) => (
                 <Ionicons
@@ -181,96 +179,92 @@ export default function TeaDetailScreen() {
           </View>
         </View>
 
-        {/* BODY – scrollable */}
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={[styles.body, { marginTop: bodyDynamicMarginTop }]}>
-            {/* tijd boven de lijn */}
-            <View style={styles.metaBlock}>
-              <View style={styles.metaRowCentered}>
-                <Ionicons
-                  name="time-outline"
-                  size={18}
-                  color={COLORS.primaryDark}
-                  style={{ marginRight: 6 }}
-                />
-                <Text style={styles.metaText}>
-                  {tea.steepTime ? `${tea.steepTime} min` : 'Brew time unknown'}
-                </Text>
-              </View>
-
-              <View style={styles.metaLine} />
+        {/* BODY */}
+        <View style={[styles.body, { marginTop: bodyDynamicMarginTop }]}>
+          {/* tijd boven de lijn */}
+          <View style={styles.metaBlock}>
+            <View style={styles.metaRowCentered}>
+              <Ionicons
+                name="time-outline"
+                size={18}
+                color={COLORS.primaryDark}
+                style={{ marginRight: 6 }}
+              />
+              <Text style={styles.metaText}>
+                {tea.steepTime ? `${tea.steepTime} min` : 'Brew time unknown'}
+              </Text>
             </View>
 
-            {/* description */}
-            {tea.note ? (
-              <Text style={styles.noteText}>{tea.note}</Text>
-            ) : (
-              <Text style={styles.noteText}>
-                No description yet for this tea.
-              </Text>
-            )}
-
-            {/* RECIPE (only on detail) */}
-            {tea.recipe ? (
-              <View style={styles.recipeBlock}>
-                <Text style={styles.recipeTitle}>Recipe</Text>
-
-                {Array.isArray(tea.recipe.ingredients) &&
-                tea.recipe.ingredients.length > 0 ? (
-                  <View style={styles.recipeRow}>
-                    <Text style={styles.recipeLabel}>Ingredients</Text>
-                    <Text style={styles.recipeValue}>
-                      {tea.recipe.ingredients.join(', ')}
-                    </Text>
-                  </View>
-                ) : null}
-
-                {typeof tea.recipe.amount === 'string' &&
-                tea.recipe.amount.trim().length > 0 ? (
-                  <View style={styles.recipeRow}>
-                    <Text style={styles.recipeLabel}>Amount</Text>
-                    <Text style={styles.recipeValue}>{tea.recipe.amount}</Text>
-                  </View>
-                ) : null}
-
-                {(typeof tea.recipe.waterMl === 'number' &&
-                  Number.isFinite(tea.recipe.waterMl)) ||
-                (typeof tea.recipe.tempC === 'number' &&
-                  Number.isFinite(tea.recipe.tempC)) ? (
-                  <View style={styles.recipeRow}>
-                    <Text style={styles.recipeLabel}>Water</Text>
-                    <Text style={styles.recipeValue}>
-                      {typeof tea.recipe.waterMl === 'number'
-                        ? `${tea.recipe.waterMl} ml`
-                        : '—'}
-                      {'  ·  '}
-                      {typeof tea.recipe.tempC === 'number'
-                        ? `${tea.recipe.tempC}°C`
-                        : '—'}
-                    </Text>
-                  </View>
-                ) : null}
-
-                {typeof tea.recipe.steps === 'string' &&
-                tea.recipe.steps.trim().length > 0 ? (
-                  <View style={styles.recipeRow}>
-                    <Text style={styles.recipeLabel}>Steps</Text>
-                    <Text style={styles.recipeValue}>{tea.recipe.steps}</Text>
-                  </View>
-                ) : null}
-              </View>
-            ) : null}
-
-            {/* Add to library button (component) */}
-            <PostButton
-              title={isSaved ? 'In your library' : 'Add to library'}
-              onPress={handleAddToLibrary}
-              loading={saving}
-              disabled={!userId}
-            />
+            <View style={styles.metaLine} />
           </View>
-        </ScrollView>
-      </View>
+
+          {/* description */}
+          {tea.note ? (
+            <Text style={styles.noteText}>{tea.note}</Text>
+          ) : (
+            <Text style={styles.noteText}>No description yet for this tea.</Text>
+          )}
+
+          {/* RECIPE (only on detail) */}
+          {tea.recipe ? (
+            <View style={styles.recipeBlock}>
+              <Text style={styles.recipeTitle}>Recipe</Text>
+
+              {Array.isArray(tea.recipe.ingredients) &&
+              tea.recipe.ingredients.length > 0 ? (
+                <View style={styles.recipeRow}>
+                  <Text style={styles.recipeLabel}>Ingredients</Text>
+                  <Text style={styles.recipeValue}>
+                    {tea.recipe.ingredients.join(', ')}
+                  </Text>
+                </View>
+              ) : null}
+
+              {typeof tea.recipe.amount === 'string' &&
+              tea.recipe.amount.trim().length > 0 ? (
+                <View style={styles.recipeRow}>
+                  <Text style={styles.recipeLabel}>Amount</Text>
+                  <Text style={styles.recipeValue}>{tea.recipe.amount}</Text>
+                </View>
+              ) : null}
+
+              {(typeof tea.recipe.waterMl === 'number' &&
+                Number.isFinite(tea.recipe.waterMl)) ||
+              (typeof tea.recipe.tempC === 'number' &&
+                Number.isFinite(tea.recipe.tempC)) ? (
+                <View style={styles.recipeRow}>
+                  <Text style={styles.recipeLabel}>Water</Text>
+                  <Text style={styles.recipeValue}>
+                    {typeof tea.recipe.waterMl === 'number'
+                      ? `${tea.recipe.waterMl} ml`
+                      : '—'}
+                    {'  ·  '}
+                    {typeof tea.recipe.tempC === 'number'
+                      ? `${tea.recipe.tempC}°C`
+                      : '—'}
+                  </Text>
+                </View>
+              ) : null}
+
+              {typeof tea.recipe.steps === 'string' &&
+              tea.recipe.steps.trim().length > 0 ? (
+                <View style={styles.recipeRow}>
+                  <Text style={styles.recipeLabel}>Steps</Text>
+                  <Text style={styles.recipeValue}>{tea.recipe.steps}</Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+
+          {/* Add to library button */}
+          <PostButton
+            title={isSaved ? 'In your library' : 'Add to library'}
+            onPress={handleAddToLibrary}
+            loading={saving}
+            disabled={!userId}
+          />
+        </View>
+      </ScrollView>
     </ImageBackground>
   );
 }
@@ -393,7 +387,7 @@ const styles = StyleSheet.create({
   },
 
   recipeTitle: {
-    ...TYPO.cardTitle,
+    ...TYPO.cardTitle, // TYPO.heading doesn't exist in your theme
     color: COLORS.primaryDark,
     marginBottom: SPACING.sm,
   },
