@@ -15,6 +15,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+
 import Chip from '../../components/Chip';
 import FormField from '../../components/FormField';
 import PostButton from '../../components/PostButton';
@@ -230,8 +232,9 @@ export default function PostTea() {
       imageStyle={{ resizeMode: 'cover', opacity: 0.35 }}
     >
       <View style={{ flex: 1 }}>
-        <ScrollView
+        <KeyboardAwareScrollView
           keyboardShouldPersistTaps="handled"
+          bottomOffset={24}
           contentContainerStyle={{
             paddingHorizontal: SPACING.lg,
             paddingTop: insets.top + SPACING.lg,
@@ -243,7 +246,10 @@ export default function PostTea() {
             <Text
               style={[
                 TYPO.display1,
-                { color: COLORS.primaryDark, textTransform: 'none' },
+                {
+                  color: COLORS.primaryDark,
+                  textTransform: 'none',
+                },
               ]}
             >
               Post Tea
@@ -543,7 +549,7 @@ export default function PostTea() {
               {String(error)}
             </ThemedText>
           ) : null}
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* SUCCESS TOAST */}
         {successVisible && (
