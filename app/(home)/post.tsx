@@ -317,9 +317,9 @@ export default function PostTea() {
             )}
           </View>
 
-          {/* STEEP TIME */}
+          {/* Infusion TIME */}
           <FormField
-            label="Steep Time (min)"
+            label="Infusion Time (min)"
             value={steepTime}
             onChangeText={setSteepTime}
             placeholder="3"
@@ -357,7 +357,7 @@ export default function PostTea() {
               })}
             </View>
 
-            {/* Optional: small hint (remove if you don't want text) */}
+            
             {numericRating === 0 ? (
               <Text style={{ marginTop: 6, color: COLORS.textSoft }}>
                 Tap a star to rate
