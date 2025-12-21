@@ -27,7 +27,7 @@ import { COLORS, SPACING, TYPO } from '../theme';
 import { TEAS_KEY } from '@/data/teas';
 import { useSWRConfig } from 'swr';
 
-// NEW: Toast component
+// Toast component
 import { useToastPill } from '@/components/ToastPill';
 
 const COLOR_SWATCHES = [
@@ -50,7 +50,7 @@ export default function PostTea() {
   // access global SWR mutate
   const { mutate } = useSWRConfig();
 
-  // NEW: reusable toast (same animation as before)
+  // reusable toast
   const { show: showToast, Toast } = useToastPill({
     COLORS,
     SPACING,
@@ -63,7 +63,9 @@ export default function PostTea() {
   const [name, setName] = useState('');
   const [typeId, setTypeId] = useState<string | null>(null);
   const [steepTime, setSteepTime] = useState<string>('3');
-  const [rating, setRating] = useState<string>('3');
+
+  // ✅ CHANGE: default rating to 0 (no preselection)
+  const [rating, setRating] = useState<string>('0');
 
   // How was it?
   const [note, setNote] = useState<string>('');
@@ -121,12 +123,18 @@ export default function PostTea() {
     if (!userId) return false;
     const n = name.trim().length > 0;
     const t = !!typeId;
+
     const st = Number(steepTime);
     const rt = Number(rating);
+
     const validSteep = Number.isFinite(st) && st > 0 && st < 60;
+
+    // ✅ requires explicit rating 1..5 (so 0 blocks submit)
     const validRating = Number.isFinite(rt) && rt >= 1 && rt <= 5;
+
     const validColor = !color || COLOR_SWATCHES.includes(color);
     const validMood = !moodTag || MOODS.includes(moodTag as any);
+
     return (
       n &&
       t &&
@@ -191,7 +199,10 @@ export default function PostTea() {
       // Form reset
       setName('');
       setSteepTime('3');
-      setRating('3');
+
+      // ✅ reset rating back to 0 (no stars)
+      setRating('0');
+
       setNote('');
 
       setRecipeIngredients('');
@@ -200,13 +211,13 @@ export default function PostTea() {
       setRecipeAmount('');
       setRecipeSteps('');
 
-      // NEW: same toast as before, but reusable
       const msg = created?.name
         ? `“${created.name}” has been posted`
         : 'Tea posted';
       showToast({ message: msg, icon: 'checkmark-circle' });
     } catch (e) {
       console.warn('Failed to create tea', e);
+      showToast({ message: 'Failed to post tea', icon: 'alert-circle' });
     }
   }, [
     trigger,
@@ -326,6 +337,7 @@ export default function PostTea() {
             >
               Rating
             </Text>
+
             <View style={{ flexDirection: 'row' }}>
               {[1, 2, 3, 4, 5].map(val => {
                 const active = val <= numericRating;
@@ -344,6 +356,13 @@ export default function PostTea() {
                 );
               })}
             </View>
+
+            {/* Optional: small hint (remove if you don't want text) */}
+            {numericRating === 0 ? (
+              <Text style={{ marginTop: 6, color: COLORS.textSoft }}>
+                Tap a star to rate
+              </Text>
+            ) : null}
           </View>
 
           {/* RECIPE */}
@@ -557,7 +576,7 @@ export default function PostTea() {
           ) : null}
         </KeyboardAwareScrollView>
 
-        {/* SUCCESS TOAST (reusable) */}
+        {/* Toast */}
         <Toast bottom={insets.bottom + 24} />
       </View>
     </ImageBackground>
