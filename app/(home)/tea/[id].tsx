@@ -16,11 +16,15 @@ import { getCurrentUser } from '../../../data/auth';
 import { getFavorites, toggleFavorite } from '../../../data/favorites';
 import { COLORS, SPACING, TYPO } from '../../theme';
 
-// ✅ ADD: toast component
+// ✅ toast component
 import { useToastPill } from '../../../components/ToastPill';
 
 // Adjust only this to move blob up/down
 const BLOB_TOP = -200;
+
+// ✅ NEW: keep spacing consistent no matter title wraps
+const HEADER_HEIGHT = 430; // tweak if you want body closer/further (410–460 range)
+const BODY_OFFSET_FROM_HEADER = -70; // your old sweet spot
 
 export default function TeaDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -34,7 +38,7 @@ export default function TeaDetailScreen() {
   const [saving, setSaving] = useState(false);
   const [isSaved, setIsSaved] = useState<boolean>(false);
 
-  // ✅ ADD: init toast (same as post)
+  // ✅ toast (same as post)
   const { show: showToast, Toast } = useToastPill({ COLORS, SPACING, TYPO });
 
   // load tea
@@ -104,12 +108,10 @@ export default function TeaDetailScreen() {
 
   const bgColor = tea.color || COLORS.primaryDark;
   const rating = Math.max(0, Math.min(5, Number(tea.rating) || 0));
-  const bodyDynamicMarginTop = -BLOB_TOP - 70;
 
   async function handleAddToLibrary() {
     if (!userId || !tea?._id) return;
 
-    // 🔑 remember previous state so we know which message to show
     const wasSaved = isSaved;
 
     try {
@@ -119,7 +121,6 @@ export default function TeaDetailScreen() {
       const nowSaved = favorites.some((t: any) => t._id === tea._id);
       setIsSaved(nowSaved);
 
-      // ✅ ADD: toast
       showToast({
         message: nowSaved ? 'Added to library' : 'Removed from library',
         icon: nowSaved ? 'checkmark-circle' : 'remove-circle',
@@ -127,13 +128,11 @@ export default function TeaDetailScreen() {
     } catch (e) {
       console.warn('Failed to toggle favorite from detail', e);
 
-      // ✅ optional: error toast (keeps UX consistent)
       showToast({
         message: 'Something went wrong',
         icon: 'alert-circle',
       });
 
-      // rollback UI if needed (optional)
       setIsSaved(wasSaved);
     } finally {
       setSaving(false);
@@ -146,7 +145,6 @@ export default function TeaDetailScreen() {
       style={{ flex: 1 }}
       imageStyle={{ opacity: 0.2, resizeMode: 'cover' }}
     >
-      {/* ✅ IMPORTANT: wrapper so Toast can overlay */}
       <View style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={[
@@ -154,7 +152,7 @@ export default function TeaDetailScreen() {
             { paddingTop: insets.top + SPACING.lg },
           ]}
         >
-          {/* HEADER (now scrolls) */}
+          {/* HEADER (fixed height => consistent body spacing) */}
           <View style={styles.header}>
             {/* BLOB */}
             <View
@@ -175,7 +173,9 @@ export default function TeaDetailScreen() {
 
             {/* TITLE + TAGS + STARS */}
             <View style={styles.titleBlock}>
-              <Text style={styles.title}>{tea.name || 'Unknown tea'}</Text>
+              <Text style={styles.title} numberOfLines={2}>
+                {tea.name || 'Unknown tea'}
+              </Text>
 
               <View style={styles.tagsRow}>
                 {tea.moodTag ? (
@@ -206,7 +206,7 @@ export default function TeaDetailScreen() {
           </View>
 
           {/* BODY */}
-          <View style={[styles.body, { marginTop: bodyDynamicMarginTop }]}>
+          <View style={[styles.body, { marginTop: BODY_OFFSET_FROM_HEADER }]}>
             {/* tijd boven de lijn */}
             <View style={styles.metaBlock}>
               <View style={styles.metaRowCentered}>
@@ -228,10 +228,12 @@ export default function TeaDetailScreen() {
             {tea.note ? (
               <Text style={styles.noteText}>{tea.note}</Text>
             ) : (
-              <Text style={styles.noteText}>No description yet for this tea.</Text>
+              <Text style={styles.noteText}>
+                No description yet for this tea.
+              </Text>
             )}
 
-            {/* RECIPE (only on detail) */}
+            {/* RECIPE */}
             {tea.recipe ? (
               <View style={styles.recipeBlock}>
                 <Text style={styles.recipeTitle}>Recipe</Text>
@@ -292,7 +294,7 @@ export default function TeaDetailScreen() {
           </View>
         </ScrollView>
 
-        {/* ✅ ADD: Toast overlay */}
+        {/* Toast overlay */}
         <Toast bottom={insets.bottom + 18} />
       </View>
     </ImageBackground>
@@ -313,8 +315,8 @@ const styles = StyleSheet.create({
   },
 
   header: {
+    height: HEADER_HEIGHT, // ✅ fixed => consistent layout
     paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.lg,
     justifyContent: 'flex-start',
     paddingBottom: SPACING.lg,
   },
@@ -343,7 +345,7 @@ const styles = StyleSheet.create({
     fontSize: 52,
     color: '#D6F4CD',
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 24, // was 32 (slightly tighter for 2 lines)
     textTransform: 'lowercase',
   },
 
