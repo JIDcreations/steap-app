@@ -24,6 +24,10 @@ import useTeaPost from '../../data/tea-post';
 import useTeaTypes from '../../data/tea-types';
 import { COLORS, SPACING, TYPO } from '../theme';
 
+// STEP 2: SWR cache update for Home
+import { TEAS_KEY } from '@/data/teas';
+import { useSWRConfig } from 'swr';
+
 const COLOR_SWATCHES = [
   '#b0a09bff',
   '#C2A98B',
@@ -40,6 +44,9 @@ const SEED_USER_ID = '68deb78dd1fb610db1c307f8';
 
 export default function PostTea() {
   const insets = useSafeAreaInsets();
+
+  // STEP 2: access global SWR mutate
+  const { mutate } = useSWRConfig();
 
   const [userId, setUserId] = useState<string | null>(null);
   const [booted, setBooted] = useState(false);
@@ -180,6 +187,28 @@ export default function PostTea() {
         user: uid,
       });
 
+      // STEP 2A: store last posted id for Home animation later
+      if (created?._id) {
+        await AsyncStorage.setItem('lastPostedTeaId', created._id);
+      }
+
+      // STEP 2B: optimistic cache update (Home will instantly include it)
+      mutate(
+        TEAS_KEY,
+        (current: any) => {
+          const arr = Array.isArray(current) ? current : [];
+          const next = [
+            created,
+            ...arr.filter((t: any) => t?._id !== created?._id),
+          ];
+          return next;
+        },
+        false
+      );
+
+      // STEP 2C: revalidate to get the fully correct server version (populated fields, ordering, etc.)
+      mutate(TEAS_KEY);
+
       // Form reset
       setName('');
       setSteepTime('3');
@@ -212,6 +241,7 @@ export default function PostTea() {
     color,
     moodTag,
     showSuccessToast,
+    mutate,
   ]);
 
   if (!booted) return <ThemedText>Loading user…</ThemedText>;

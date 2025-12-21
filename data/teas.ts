@@ -2,16 +2,26 @@
 import useSWR from 'swr';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
 if (!API_URL) {
-  throw new Error('EXPO_PUBLIC_API_URL is missing. Add it to .env and restart: npx expo start -c');
+  throw new Error(
+    'EXPO_PUBLIC_API_URL is missing. Add it to .env and restart: npx expo start -c'
+  );
 }
+
+// Shared SWR key so other screens (Post) can update the Home cache reliably
+export const TEAS_KEY = `${API_URL}/api/teas`;
 
 const rawFetcher = async (url: string) => {
   const res = await fetch(url);
+
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    throw new Error(`GET ${url} -> ${res.status} ${res.statusText} :: ${body}`);
+    throw new Error(
+      `GET ${url} -> ${res.status} ${res.statusText} :: ${body}`
+    );
   }
+
   return res.json();
 };
 
@@ -25,7 +35,7 @@ const teasFetcher = async (url: string) => {
 };
 
 export function useTeas() {
-  return useSWR(`${API_URL}/api/teas`, teasFetcher, {
+  return useSWR(TEAS_KEY, teasFetcher, {
     revalidateOnFocus: false,
   });
 }

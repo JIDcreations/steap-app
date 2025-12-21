@@ -2,9 +2,11 @@
 
 import useTeaTypes from '@/data/tea-types';
 import { useTeas } from '@/data/teas';
-import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Animated,
   ImageBackground,
   RefreshControl,
   ScrollView,
@@ -34,6 +36,10 @@ export default function HomeScreen() {
   // favorites state
   const [userId, setUserId] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+
+  // animation state for "just posted" tea
+  const slideAnim = useState(() => new Animated.Value(0))[0];
+  const [justPostedId, setJustPostedId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -66,19 +72,18 @@ export default function HomeScreen() {
     async (teaId: string) => {
       if (!userId) return;
 
-    
-     // optimistic UI
-setSavedIds(prev => {
-  const next = new Set(prev);
+      // optimistic UI
+      setSavedIds(prev => {
+        const next = new Set(prev);
 
-  if (next.has(teaId)) {
-    next.delete(teaId);
-  } else {
-    next.add(teaId);
-  }
+        if (next.has(teaId)) {
+          next.delete(teaId);
+        } else {
+          next.add(teaId);
+        }
 
-  return next;
-});
+        return next;
+      });
 
       try {
         const res = await toggleFavorite(userId, teaId);
@@ -104,6 +109,43 @@ setSavedIds(prev => {
     mutate();
     refreshFavorites();
   }, [mutate, refreshFavorites]);
+
+  // When Home becomes active, check if there's a "last posted" id to animate
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+
+      (async () => {
+        // refresh when returning to Home
+        mutate();
+        refreshFavorites();
+
+        const id = await AsyncStorage.getItem('lastPostedTeaId');
+        if (!alive) return;
+
+        if (id) {
+          setJustPostedId(id);
+
+          // Dynamic, snappy spring
+          slideAnim.setValue(0);
+          Animated.spring(slideAnim, {
+            toValue: 1,
+            damping: 14, // lower = more bounce, higher = calmer
+            stiffness: 180, // higher = snappier
+            mass: 0.9,
+            useNativeDriver: true,
+          }).start();
+
+          // play once
+          await AsyncStorage.removeItem('lastPostedTeaId');
+        }
+      })();
+
+      return () => {
+        alive = false;
+      };
+    }, [mutate, refreshFavorites, slideAnim])
+  );
 
   const filtered = useMemo(() => {
     if (!Array.isArray(teas)) return [];
@@ -193,10 +235,10 @@ setSavedIds(prev => {
           showsHorizontalScrollIndicator={false}
           style={{
             marginBottom: SPACING.lg,
-            marginHorizontal: -SPACING.lg, // buiten de page padding
+            marginHorizontal: -SPACING.lg,
           }}
           contentContainerStyle={{
-            paddingHorizontal: SPACING.lg, // zelfde gutter behouden
+            paddingHorizontal: SPACING.lg,
           }}
         >
           <View style={{ flexDirection: 'row' }}>
@@ -228,10 +270,10 @@ setSavedIds(prev => {
             showsHorizontalScrollIndicator={false}
             style={{
               marginBottom: SPACING.xl,
-              marginHorizontal: -SPACING.lg, // padding van de parent neutraliseren
+              marginHorizontal: -SPACING.lg,
             }}
             contentContainerStyle={{
-              paddingHorizontal: SPACING.lg, // toch nog dezelfde “gutter” behouden
+              paddingHorizontal: SPACING.lg,
             }}
           >
             <View style={{ flexDirection: 'row' }}>
@@ -274,23 +316,61 @@ setSavedIds(prev => {
               Recently posted
             </Text>
 
-            {recentTeas.map((tea: any) => (
-              <TeaRowCard
-                key={`recent-${tea._id}`}
-                name={tea.name}
-                typeName={tea.type?.name}
-                rating={tea.rating}
-                color={tea.color}
-                saved={isSaved(tea._id)}
-                onToggleSaved={() => handleToggleSaved(tea._id)}
-                onPressCard={() =>
-                  router.push({
-                    pathname: '/tea/[id]',
-                    params: { id: tea._id },
-                  })
-                }
-              />
-            ))}
+            {recentTeas.map((tea: any) => {
+              const isJustPosted = justPostedId === tea._id;
+
+              const animatedStyle = isJustPosted
+                ? {
+                    opacity: slideAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.4, 1],
+                    }),
+                    transform: [
+                      {
+                        translateY: slideAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [-28, 0],
+                        }),
+                      },
+                      {
+                        scale: slideAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.98, 1],
+                        }),
+                      },
+                    ],
+                  }
+                : undefined;
+
+              const row = (
+                <TeaRowCard
+                  key={`recent-${tea._id}`}
+                  name={tea.name}
+                  typeName={tea.type?.name}
+                  rating={tea.rating}
+                  color={tea.color}
+                  saved={isSaved(tea._id)}
+                  onToggleSaved={() => handleToggleSaved(tea._id)}
+                  onPressCard={() =>
+                    router.push({
+                      pathname: '/tea/[id]',
+                      params: { id: tea._id },
+                    })
+                  }
+                />
+              );
+
+              return isJustPosted ? (
+                <Animated.View
+                  key={`recent-anim-${tea._id}`}
+                  style={animatedStyle}
+                >
+                  {row}
+                </Animated.View>
+              ) : (
+                row
+              );
+            })}
           </View>
         )}
       </ScrollView>
