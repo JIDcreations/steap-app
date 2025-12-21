@@ -16,8 +16,11 @@ import { getCurrentUser } from '../../../data/auth';
 import { getFavorites, toggleFavorite } from '../../../data/favorites';
 import { COLORS, SPACING, TYPO } from '../../theme';
 
+// ✅ ADD: toast component
+import { useToastPill } from '../../../components/ToastPill';
+
 // Adjust only this to move blob up/down
-const BLOB_TOP = -140;
+const BLOB_TOP = -200;
 
 export default function TeaDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -30,6 +33,9 @@ export default function TeaDetailScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [isSaved, setIsSaved] = useState<boolean>(false);
+
+  // ✅ ADD: init toast (same as post)
+  const { show: showToast, Toast } = useToastPill({ COLORS, SPACING, TYPO });
 
   // load tea
   useEffect(() => {
@@ -98,10 +104,13 @@ export default function TeaDetailScreen() {
 
   const bgColor = tea.color || COLORS.primaryDark;
   const rating = Math.max(0, Math.min(5, Number(tea.rating) || 0));
-  const bodyDynamicMarginTop = -BLOB_TOP + 10;
+  const bodyDynamicMarginTop = -BLOB_TOP - 70;
 
   async function handleAddToLibrary() {
     if (!userId || !tea?._id) return;
+
+    // 🔑 remember previous state so we know which message to show
+    const wasSaved = isSaved;
 
     try {
       setSaving(true);
@@ -109,8 +118,23 @@ export default function TeaDetailScreen() {
       const favorites = (res.favorites as any[]) || [];
       const nowSaved = favorites.some((t: any) => t._id === tea._id);
       setIsSaved(nowSaved);
+
+      // ✅ ADD: toast
+      showToast({
+        message: nowSaved ? 'Added to library' : 'Removed from library',
+        icon: nowSaved ? 'checkmark-circle' : 'remove-circle',
+      });
     } catch (e) {
       console.warn('Failed to toggle favorite from detail', e);
+
+      // ✅ optional: error toast (keeps UX consistent)
+      showToast({
+        message: 'Something went wrong',
+        icon: 'alert-circle',
+      });
+
+      // rollback UI if needed (optional)
+      setIsSaved(wasSaved);
     } finally {
       setSaving(false);
     }
@@ -122,149 +146,155 @@ export default function TeaDetailScreen() {
       style={{ flex: 1 }}
       imageStyle={{ opacity: 0.2, resizeMode: 'cover' }}
     >
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: insets.top + SPACING.lg },
-        ]}
-      >
-        {/* HEADER (now scrolls) */}
-        <View style={styles.header}>
-          {/* BLOB */}
-          <View
-            style={[
-              styles.headerBlob,
-              { backgroundColor: bgColor, top: BLOB_TOP },
-            ]}
-          />
+      {/* ✅ IMPORTANT: wrapper so Toast can overlay */}
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: insets.top + SPACING.lg },
+          ]}
+        >
+          {/* HEADER (now scrolls) */}
+          <View style={styles.header}>
+            {/* BLOB */}
+            <View
+              style={[
+                styles.headerBlob,
+                { backgroundColor: bgColor, top: BLOB_TOP },
+              ]}
+            />
 
-          {/* BACK */}
-          <Pressable
-            onPress={() => router.back()}
-            style={styles.backButton}
-            hitSlop={10}
-          >
-            <Ionicons name="chevron-back" size={24} color="#D6F4CD" />
-          </Pressable>
+            {/* BACK */}
+            <Pressable
+              onPress={() => router.back()}
+              style={styles.backButton}
+              hitSlop={10}
+            >
+              <Ionicons name="chevron-back" size={24} color="#D6F4CD" />
+            </Pressable>
 
-          {/* TITLE + TAGS + STARS */}
-          <View style={styles.titleBlock}>
-            <Text style={styles.title}>{tea.name || 'Unknown tea'}</Text>
+            {/* TITLE + TAGS + STARS */}
+            <View style={styles.titleBlock}>
+              <Text style={styles.title}>{tea.name || 'Unknown tea'}</Text>
 
-            <View style={styles.tagsRow}>
-              {tea.moodTag ? (
-                <View style={styles.tag}>
-                  <Text style={styles.tagText}>{tea.moodTag}</Text>
-                </View>
-              ) : null}
+              <View style={styles.tagsRow}>
+                {tea.moodTag ? (
+                  <View style={styles.tag}>
+                    <Text style={styles.tagText}>{tea.moodTag}</Text>
+                  </View>
+                ) : null}
 
-              {tea.type?.name ? (
-                <View style={styles.tag}>
-                  <Text style={styles.tagText}>{tea.type.name}</Text>
-                </View>
-              ) : null}
+                {tea.type?.name ? (
+                  <View style={styles.tag}>
+                    <Text style={styles.tagText}>{tea.type.name}</Text>
+                  </View>
+                ) : null}
+              </View>
+
+              <View style={styles.starsRow}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Ionicons
+                    key={i}
+                    name={i < rating ? 'star' : 'star-outline'}
+                    size={22}
+                    color="#D6F4CD"
+                    style={{ marginHorizontal: 2 }}
+                  />
+                ))}
+              </View>
             </View>
+          </View>
 
-            <View style={styles.starsRow}>
-              {Array.from({ length: 5 }).map((_, i) => (
+          {/* BODY */}
+          <View style={[styles.body, { marginTop: bodyDynamicMarginTop }]}>
+            {/* tijd boven de lijn */}
+            <View style={styles.metaBlock}>
+              <View style={styles.metaRowCentered}>
                 <Ionicons
-                  key={i}
-                  name={i < rating ? 'star' : 'star-outline'}
-                  size={22}
-                  color="#D6F4CD"
-                  style={{ marginHorizontal: 2 }}
+                  name="time-outline"
+                  size={18}
+                  color={COLORS.primaryDark}
+                  style={{ marginRight: 6 }}
                 />
-              ))}
+                <Text style={styles.metaText}>
+                  {tea.steepTime ? `${tea.steepTime} min` : 'Brew time unknown'}
+                </Text>
+              </View>
+
+              <View style={styles.metaLine} />
             </View>
+
+            {/* description */}
+            {tea.note ? (
+              <Text style={styles.noteText}>{tea.note}</Text>
+            ) : (
+              <Text style={styles.noteText}>No description yet for this tea.</Text>
+            )}
+
+            {/* RECIPE (only on detail) */}
+            {tea.recipe ? (
+              <View style={styles.recipeBlock}>
+                <Text style={styles.recipeTitle}>Recipe</Text>
+
+                {Array.isArray(tea.recipe.ingredients) &&
+                tea.recipe.ingredients.length > 0 ? (
+                  <View style={styles.recipeRow}>
+                    <Text style={styles.recipeLabel}>Ingredients</Text>
+                    <Text style={styles.recipeValue}>
+                      {tea.recipe.ingredients.join(', ')}
+                    </Text>
+                  </View>
+                ) : null}
+
+                {typeof tea.recipe.amount === 'string' &&
+                tea.recipe.amount.trim().length > 0 ? (
+                  <View style={styles.recipeRow}>
+                    <Text style={styles.recipeLabel}>Amount</Text>
+                    <Text style={styles.recipeValue}>{tea.recipe.amount}</Text>
+                  </View>
+                ) : null}
+
+                {(typeof tea.recipe.waterMl === 'number' &&
+                  Number.isFinite(tea.recipe.waterMl)) ||
+                (typeof tea.recipe.tempC === 'number' &&
+                  Number.isFinite(tea.recipe.tempC)) ? (
+                  <View style={styles.recipeRow}>
+                    <Text style={styles.recipeLabel}>Water</Text>
+                    <Text style={styles.recipeValue}>
+                      {typeof tea.recipe.waterMl === 'number'
+                        ? `${tea.recipe.waterMl} ml`
+                        : '—'}
+                      {'  ·  '}
+                      {typeof tea.recipe.tempC === 'number'
+                        ? `${tea.recipe.tempC}°C`
+                        : '—'}
+                    </Text>
+                  </View>
+                ) : null}
+
+                {typeof tea.recipe.steps === 'string' &&
+                tea.recipe.steps.trim().length > 0 ? (
+                  <View style={styles.recipeRow}>
+                    <Text style={styles.recipeLabel}>Steps</Text>
+                    <Text style={styles.recipeValue}>{tea.recipe.steps}</Text>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+
+            {/* Add to library button */}
+            <PostButton
+              title={isSaved ? 'In your library' : 'Add to library'}
+              onPress={handleAddToLibrary}
+              loading={saving}
+              disabled={!userId}
+            />
           </View>
-        </View>
+        </ScrollView>
 
-        {/* BODY */}
-        <View style={[styles.body, { marginTop: bodyDynamicMarginTop }]}>
-          {/* tijd boven de lijn */}
-          <View style={styles.metaBlock}>
-            <View style={styles.metaRowCentered}>
-              <Ionicons
-                name="time-outline"
-                size={18}
-                color={COLORS.primaryDark}
-                style={{ marginRight: 6 }}
-              />
-              <Text style={styles.metaText}>
-                {tea.steepTime ? `${tea.steepTime} min` : 'Brew time unknown'}
-              </Text>
-            </View>
-
-            <View style={styles.metaLine} />
-          </View>
-
-          {/* description */}
-          {tea.note ? (
-            <Text style={styles.noteText}>{tea.note}</Text>
-          ) : (
-            <Text style={styles.noteText}>No description yet for this tea.</Text>
-          )}
-
-          {/* RECIPE (only on detail) */}
-          {tea.recipe ? (
-            <View style={styles.recipeBlock}>
-              <Text style={styles.recipeTitle}>Recipe</Text>
-
-              {Array.isArray(tea.recipe.ingredients) &&
-              tea.recipe.ingredients.length > 0 ? (
-                <View style={styles.recipeRow}>
-                  <Text style={styles.recipeLabel}>Ingredients</Text>
-                  <Text style={styles.recipeValue}>
-                    {tea.recipe.ingredients.join(', ')}
-                  </Text>
-                </View>
-              ) : null}
-
-              {typeof tea.recipe.amount === 'string' &&
-              tea.recipe.amount.trim().length > 0 ? (
-                <View style={styles.recipeRow}>
-                  <Text style={styles.recipeLabel}>Amount</Text>
-                  <Text style={styles.recipeValue}>{tea.recipe.amount}</Text>
-                </View>
-              ) : null}
-
-              {(typeof tea.recipe.waterMl === 'number' &&
-                Number.isFinite(tea.recipe.waterMl)) ||
-              (typeof tea.recipe.tempC === 'number' &&
-                Number.isFinite(tea.recipe.tempC)) ? (
-                <View style={styles.recipeRow}>
-                  <Text style={styles.recipeLabel}>Water</Text>
-                  <Text style={styles.recipeValue}>
-                    {typeof tea.recipe.waterMl === 'number'
-                      ? `${tea.recipe.waterMl} ml`
-                      : '—'}
-                    {'  ·  '}
-                    {typeof tea.recipe.tempC === 'number'
-                      ? `${tea.recipe.tempC}°C`
-                      : '—'}
-                  </Text>
-                </View>
-              ) : null}
-
-              {typeof tea.recipe.steps === 'string' &&
-              tea.recipe.steps.trim().length > 0 ? (
-                <View style={styles.recipeRow}>
-                  <Text style={styles.recipeLabel}>Steps</Text>
-                  <Text style={styles.recipeValue}>{tea.recipe.steps}</Text>
-                </View>
-              ) : null}
-            </View>
-          ) : null}
-
-          {/* Add to library button */}
-          <PostButton
-            title={isSaved ? 'In your library' : 'Add to library'}
-            onPress={handleAddToLibrary}
-            loading={saving}
-            disabled={!userId}
-          />
-        </View>
-      </ScrollView>
+        {/* ✅ ADD: Toast overlay */}
+        <Toast bottom={insets.bottom + 18} />
+      </View>
     </ImageBackground>
   );
 }
@@ -387,7 +417,7 @@ const styles = StyleSheet.create({
   },
 
   recipeTitle: {
-    ...TYPO.cardTitle, // TYPO.heading doesn't exist in your theme
+    ...TYPO.cardTitle,
     color: COLORS.primaryDark,
     marginBottom: SPACING.sm,
   },

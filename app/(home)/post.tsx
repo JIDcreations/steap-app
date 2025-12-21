@@ -3,9 +3,8 @@
 import { ThemedText } from '@/components/themed-text';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Animated,
   ImageBackground,
   ScrollView,
   Text,
@@ -24,9 +23,12 @@ import useTeaPost from '../../data/tea-post';
 import useTeaTypes from '../../data/tea-types';
 import { COLORS, SPACING, TYPO } from '../theme';
 
-// STEP 2: SWR cache update for Home
+// SWR cache update for Home
 import { TEAS_KEY } from '@/data/teas';
 import { useSWRConfig } from 'swr';
+
+// NEW: Toast component
+import { useToastPill } from '@/components/ToastPill';
 
 const COLOR_SWATCHES = [
   '#b0a09bff',
@@ -45,8 +47,15 @@ const SEED_USER_ID = '68deb78dd1fb610db1c307f8';
 export default function PostTea() {
   const insets = useSafeAreaInsets();
 
-  // STEP 2: access global SWR mutate
+  // access global SWR mutate
   const { mutate } = useSWRConfig();
+
+  // NEW: reusable toast (same animation as before)
+  const { show: showToast, Toast } = useToastPill({
+    COLORS,
+    SPACING,
+    TYPO,
+  });
 
   const [userId, setUserId] = useState<string | null>(null);
   const [booted, setBooted] = useState(false);
@@ -70,36 +79,6 @@ export default function PostTea() {
   const [recipeTempC, setRecipeTempC] = useState<string>('');
   const [recipeAmount, setRecipeAmount] = useState<string>('');
   const [recipeSteps, setRecipeSteps] = useState<string>('');
-
-  // Toast state
-  const [successVisible, setSuccessVisible] = useState(false);
-  const [successName, setSuccessName] = useState<string | null>(null);
-  const toastAnim = useRef(new Animated.Value(0)).current;
-
-  const showSuccessToast = useCallback(
-    (teaName?: string) => {
-      setSuccessName(teaName ?? null);
-      setSuccessVisible(true);
-      toastAnim.setValue(0);
-
-      Animated.timing(toastAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => {
-        setTimeout(() => {
-          Animated.timing(toastAnim, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }).start(() => {
-            setSuccessVisible(false);
-          });
-        }, 1400);
-      });
-    },
-    [toastAnim]
-  );
 
   useEffect(() => {
     (async () => {
@@ -187,12 +166,12 @@ export default function PostTea() {
         user: uid,
       });
 
-      // STEP 2A: store last posted id for Home animation later
+      // store last posted id for Home animation later
       if (created?._id) {
         await AsyncStorage.setItem('lastPostedTeaId', created._id);
       }
 
-      // STEP 2B: optimistic cache update (Home will instantly include it)
+      // optimistic cache update (Home will instantly include it)
       mutate(
         TEAS_KEY,
         (current: any) => {
@@ -206,7 +185,7 @@ export default function PostTea() {
         false
       );
 
-      // STEP 2C: revalidate to get the fully correct server version (populated fields, ordering, etc.)
+      // revalidate to get server version (populated fields, ordering, etc.)
       mutate(TEAS_KEY);
 
       // Form reset
@@ -221,7 +200,11 @@ export default function PostTea() {
       setRecipeAmount('');
       setRecipeSteps('');
 
-      showSuccessToast(created?.name);
+      // NEW: same toast as before, but reusable
+      const msg = created?.name
+        ? `“${created.name}” has been posted`
+        : 'Tea posted';
+      showToast({ message: msg, icon: 'checkmark-circle' });
     } catch (e) {
       console.warn('Failed to create tea', e);
     }
@@ -240,20 +223,13 @@ export default function PostTea() {
     recipeSteps,
     color,
     moodTag,
-    showSuccessToast,
     mutate,
+    showToast,
   ]);
 
   if (!booted) return <ThemedText>Loading user…</ThemedText>;
 
   const numericRating = Number(rating) || 0;
-
-  // Toast animated styles
-  const toastOpacity = toastAnim;
-  const toastTranslateY = toastAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [20, 0],
-  });
 
   return (
     <ImageBackground
@@ -581,45 +557,8 @@ export default function PostTea() {
           ) : null}
         </KeyboardAwareScrollView>
 
-        {/* SUCCESS TOAST */}
-        {successVisible && (
-          <Animated.View
-            style={{
-              position: 'absolute',
-              left: SPACING.lg,
-              right: SPACING.lg,
-              bottom: insets.bottom + 24,
-              paddingVertical: 12,
-              paddingHorizontal: SPACING.md,
-              borderRadius: 999,
-              backgroundColor: COLORS.primaryDark,
-              flexDirection: 'row',
-              alignItems: 'center',
-              opacity: toastOpacity,
-              transform: [{ translateY: toastTranslateY }],
-              shadowColor: '#000',
-              shadowOpacity: 0.2,
-              shadowRadius: 6,
-              shadowOffset: { width: 0, height: 3 },
-              elevation: 4,
-            }}
-          >
-            <Ionicons
-              name="checkmark-circle"
-              size={22}
-              color={COLORS.primaryTextOnDark}
-            />
-            <Text
-              style={{
-                ...TYPO.body,
-                color: COLORS.primaryTextOnDark,
-                marginLeft: 8,
-              }}
-            >
-              {successName ? `“${successName}” has been posted` : 'Tea posted'}
-            </Text>
-          </Animated.View>
-        )}
+        {/* SUCCESS TOAST (reusable) */}
+        <Toast bottom={insets.bottom + 24} />
       </View>
     </ImageBackground>
   );
