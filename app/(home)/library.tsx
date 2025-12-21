@@ -1,6 +1,6 @@
 // app/(home)/library.tsx
 
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ImageBackground,
@@ -17,6 +17,7 @@ import { COLORS, SPACING, TYPO } from '../theme';
 
 // Components
 import useTeaTypes from '@/data/tea-types';
+import { useTeas } from '@/data/teas';
 import Chip from '../../components/Chip';
 import SearchBar from '../../components/SearchBar';
 import TeaCard from '../../components/TeaCard';
@@ -26,14 +27,25 @@ export default function LibraryScreen() {
   const router = useRouter();
 
   const { items: teaTypes } = useTeaTypes();
+  const { data: allTeas, isLoading: teasLoading, mutate: mutateTeas } =
+    useTeas();
 
   const [userId, setUserId] = useState<string | null>(null);
+
+  // Saved teas
   const [favorites, setFavorites] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [favoritesLoading, setFavoritesLoading] = useState(true);
+
+  // Posted toggle
+  const [postedOnly, setPostedOnly] = useState(false);
 
   // Search + filters
   const [q, setQ] = useState('');
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
+
+  const isObjectId = useCallback((v: any) => {
+    return typeof v === 'string' && /^[a-f\d]{24}$/i.test(v);
+  }, []);
 
   // Load current user
   useEffect(() => {
@@ -50,11 +62,11 @@ export default function LibraryScreen() {
     if (!userId) return;
 
     try {
-      setIsLoading(true);
+      setFavoritesLoading(true);
       const favs = await getFavorites(userId);
       setFavorites(Array.isArray(favs) ? favs : []);
     } finally {
-      setIsLoading(false);
+      setFavoritesLoading(false);
     }
   }, [userId]);
 
@@ -62,48 +74,164 @@ export default function LibraryScreen() {
     loadFavorites();
   }, [loadFavorites]);
 
-  const onRefresh = () => loadFavorites();
+  // AUTO REFRESH ON FOCUS
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId) return;
+      loadFavorites();
+      mutateTeas();
+    }, [userId, loadFavorites, mutateTeas])
+  );
 
-  // FAVORITE TOGGLE (check icon)
+  const isLoading = favoritesLoading || teasLoading;
+
+  const onRefresh = useCallback(() => {
+    loadFavorites();
+    mutateTeas();
+  }, [loadFavorites, mutateTeas]);
+
+  // Toggle favorite
   const handleToggleSaved = useCallback(
     async (teaId: string) => {
       if (!userId) return;
+
       try {
         const res = await toggleFavorite(userId, teaId);
-        const next = Array.isArray(res.favorites) ? res.favorites : [];
-        setFavorites(next);
+        const nextFavs = Array.isArray(res.favorites) ? res.favorites : [];
+        setFavorites(nextFavs);
+        mutateTeas();
       } catch (e) {
         console.warn('Failed to toggle favorite in library', e);
-        // fallback: herladen
         loadFavorites();
       }
     },
-    [userId, loadFavorites]
+    [userId, loadFavorites, mutateTeas]
   );
 
-  // FILTERING
+  // Saved ids (for posted mode)
+  const savedIds = useMemo(() => {
+    return new Set<string>(
+      (favorites ?? []).map((t: any) => t?._id).filter(Boolean)
+    );
+  }, [favorites]);
+
+  // Lookup maps
+  const typeNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    (teaTypes as any[]).forEach((tt: any) => {
+      if (tt?._id && tt?.name) map.set(String(tt._id), String(tt.name));
+    });
+    return map;
+  }, [teaTypes]);
+
+  const typeIdByNameLower = useMemo(() => {
+    const map = new Map<string, string>();
+    (teaTypes as any[]).forEach((tt: any) => {
+      if (tt?._id && tt?.name)
+        map.set(String(tt.name).toLowerCase(), String(tt._id));
+    });
+    return map;
+  }, [teaTypes]);
+
+  /**
+   * Normalize tea.type:
+   * - object with _id => use it
+   * - object without _id but with name => map name -> id
+   * - string ObjectId => use it
+   * - string name => map name -> id
+   */
+  const getTeaTypeId = useCallback(
+    (tea: any): string | null => {
+      const t = tea?.type;
+      if (!t) return null;
+
+      if (typeof t === 'object') {
+        const id = t?._id || t?.id;
+        if (id) return String(id);
+
+        const name = t?.name;
+        if (typeof name === 'string') {
+          return typeIdByNameLower.get(name.toLowerCase()) ?? null;
+        }
+
+        return null;
+      }
+
+      if (typeof t === 'string') {
+        if (isObjectId(t)) return t;
+
+        const mapped = typeIdByNameLower.get(t.toLowerCase());
+        return mapped ?? null;
+      }
+
+      return null;
+    },
+    [isObjectId, typeIdByNameLower]
+  );
+
+  const getTeaTypeName = useCallback(
+    (tea: any): string => {
+      const t = tea?.type;
+      if (!t) return '';
+
+      if (typeof t === 'object') {
+        if (typeof t?.name === 'string') return String(t.name);
+
+        const id = t?._id || t?.id;
+        if (id) return typeNameById.get(String(id)) ?? '';
+
+        return '';
+      }
+
+      if (typeof t === 'string') {
+        if (isObjectId(t)) return typeNameById.get(t) ?? '';
+        return t;
+      }
+
+      return '';
+    },
+    [isObjectId, typeNameById]
+  );
+
+  // My posted teas
+  const myPostedTeas = useMemo(() => {
+    if (!userId) return [];
+    if (!Array.isArray(allTeas)) return [];
+
+    return allTeas.filter((tea: any) => {
+      const u = tea?.user;
+      const id = typeof u === 'string' ? u : u?._id || u?.id;
+      return id === userId;
+    });
+  }, [allTeas, userId]);
+
+  // Dataset choice
+  const sourceList = postedOnly ? myPostedTeas : favorites;
+
+  // Filtering
   const filtered = useMemo(() => {
-    if (!favorites) return [];
+    if (!Array.isArray(sourceList)) return [];
 
     const needle = q.toLowerCase();
 
-    return favorites.filter((t: any) => {
-      const name = (t.name ?? '').toLowerCase();
-      const note = (t.note ?? '').toLowerCase();
-      const type = (t.type?.name ?? '').toLowerCase();
+    return sourceList.filter((tea: any) => {
+      const name = (tea.name ?? '').toLowerCase();
+      const note = (tea.note ?? '').toLowerCase();
+      const typeName = getTeaTypeName(tea).toLowerCase();
+      const typeId = getTeaTypeId(tea);
 
       const matchesText =
         !needle ||
         name.includes(needle) ||
         note.includes(needle) ||
-        type.includes(needle);
+        typeName.includes(needle);
 
       const matchesType =
-        !selectedType || type === selectedType.toLowerCase();
+        !selectedTypeId || (typeId ? typeId === selectedTypeId : false);
 
       return matchesText && matchesType;
     });
-  }, [favorites, q, selectedType]);
+  }, [sourceList, q, selectedTypeId, getTeaTypeId, getTeaTypeName]);
 
   return (
     <ImageBackground
@@ -122,7 +250,7 @@ export default function LibraryScreen() {
           paddingBottom: SPACING.xl,
         }}
       >
-        {/* Titel */}
+        {/* Title */}
         <View style={{ alignItems: 'center', marginBottom: SPACING.xl }}>
           <Text
             style={[
@@ -134,37 +262,53 @@ export default function LibraryScreen() {
           </Text>
         </View>
 
-        {/* Search Bar */}
+        {/* Search */}
         <View style={{ marginBottom: SPACING.md }}>
           <SearchBar
             value={q}
             onChangeText={setQ}
             onClear={() => setQ('')}
-            placeholder="Search in your saved teas"
+            placeholder={
+              postedOnly
+                ? 'Search in your posted teas'
+                : 'Search in your saved teas'
+            }
           />
         </View>
 
-        {/* Chips */}
+        {/* Chips: All → Posted → Types */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={{ marginBottom: SPACING.lg }}
+          style={{
+            marginBottom: SPACING.lg,
+            marginHorizontal: -SPACING.lg, // break out of page padding
+          }}
+          contentContainerStyle={{
+            paddingHorizontal: SPACING.lg, // keep nice gutter
+          }}
         >
           <View style={{ flexDirection: 'row' }}>
             <Chip
               label="All"
-              active={!selectedType}
-              onPress={() => setSelectedType(null)}
+              active={!selectedTypeId}
+              onPress={() => setSelectedTypeId(null)}
+            />
+
+            <Chip
+              label="Posted"
+              active={postedOnly}
+              onPress={() => setPostedOnly(prev => !prev)}
             />
 
             {(teaTypes as any[]).map((type: any) => (
               <Chip
                 key={type._id}
                 label={type.name}
-                active={selectedType === type.name}
+                active={selectedTypeId === String(type._id)}
                 onPress={() =>
-                  setSelectedType(
-                    selectedType === type.name ? null : type.name
+                  setSelectedTypeId(prev =>
+                    prev === String(type._id) ? null : String(type._id)
                   )
                 }
               />
@@ -172,7 +316,7 @@ export default function LibraryScreen() {
           </View>
         </ScrollView>
 
-        {/* GRID: 2 columns, 20px vertical spacing */}
+        {/* Grid */}
         <View
           style={{
             flexDirection: 'row',
@@ -180,35 +324,40 @@ export default function LibraryScreen() {
             justifyContent: 'space-between',
           }}
         >
-          {filtered.map((tea: any) => (
-            <View
-              key={tea._id}
-              style={{
-                width: '48%',
-                marginBottom: 20, // 20px spacing tussen kaarten
-              }}
-            >
-              <TeaCard
-                name={tea.name}
-                typeName={tea.type?.name}
-                rating={tea.rating}
-                color={tea.color}
-                saved={true} // in Library is alles saved
-                onToggleSaved={() => handleToggleSaved(tea._id)}
-                onPressCard={() =>
-                  router.push({
-                    pathname: '/tea/[id]',
-                    params: { id: tea._id },
-                  })
-                }
-              />
-            </View>
-          ))}
+          {filtered.map((tea: any) => {
+            const isSaved = postedOnly ? savedIds.has(tea._id) : true;
+            const typeName = getTeaTypeName(tea);
+
+            return (
+              <View
+                key={tea._id}
+                style={{
+                  width: '48%',
+                  marginBottom: 20,
+                }}
+              >
+                <TeaCard
+                  name={tea.name}
+                  typeName={typeName || undefined}
+                  rating={tea.rating}
+                  color={tea.color}
+                  saved={isSaved}
+                  onToggleSaved={() => handleToggleSaved(tea._id)}
+                  onPressCard={() =>
+                    router.push({
+                      pathname: '/tea/[id]',
+                      params: { id: tea._id },
+                    })
+                  }
+                />
+              </View>
+            );
+          })}
         </View>
 
         {filtered.length === 0 && !isLoading && (
           <Text style={{ color: COLORS.primaryDark, marginTop: 20 }}>
-            No saved teas found.
+            {postedOnly ? 'No posted teas found.' : 'No saved teas found.'}
           </Text>
         )}
       </ScrollView>
