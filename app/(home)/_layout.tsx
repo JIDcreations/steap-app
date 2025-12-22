@@ -74,7 +74,15 @@ export default function HomeTabsLayout() {
       <Tabs.Screen
         name="tea/[id]"
         options={{
-          href: null,        // ← Hiermee verdwijnt hij uit de navbar
+          href: null, // ← Hiermee verdwijnt hij uit de navbar
+        }}
+      />
+
+      {/* Verborgen settings pagina (geen tabbar item) */}
+      <Tabs.Screen
+        name="settings"
+        options={{
+          href: null, // ← Hiermee verdwijnt hij uit de navbar
         }}
       />
     </Tabs>

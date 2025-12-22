@@ -2,7 +2,7 @@
 
 import { useMyTeas } from '@/data/my-teas';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ImageBackground,
@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import TeaRowCard from '../../components/TeaRowCard';
-import { getCurrentUser, logout } from '../../data/auth';
+import { getCurrentUser } from '../../data/auth';
 import { getFavorites, toggleFavorite } from '../../data/favorites';
 import { COLORS, SPACING, TYPO } from '../theme';
 
@@ -37,7 +37,6 @@ export default function ProfileScreen() {
 
   // auth-user uit AsyncStorage (ingelogde user)
   const [authUser, setAuthUser] = useState<any | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
 
   // favorites ophalen voor huidige user
   const loadFavorites = useCallback(async () => {
@@ -63,13 +62,12 @@ export default function ProfileScreen() {
   }, [loadFavorites]);
 
   const onRefresh = useCallback(() => {
-    mutate();        // reload myTeas
+    mutate(); // reload myTeas
     loadFavorites(); // reload saved teas count + ids
   }, [mutate, loadFavorites]);
 
-  async function handleLogout() {
-    await logout();
-    router.replace('/login' as Href);
+  function goToSettings() {
+    router.push('/(home)/settings' as any);
   }
 
   // toggle favorite vanuit profile (plusje op rowcard)
@@ -96,16 +94,9 @@ export default function ProfileScreen() {
       let isActive = true;
 
       async function loadUser() {
-        try {
-          setAuthLoading(true);
-          const u = await getCurrentUser();
-          if (isActive) {
-            setAuthUser(u);
-          }
-        } finally {
-          if (isActive) {
-            setAuthLoading(false);
-          }
+        const u = await getCurrentUser();
+        if (isActive) {
+          setAuthUser(u);
         }
       }
 
@@ -142,6 +133,8 @@ export default function ProfileScreen() {
   const displayName =
     authUser?.username || currentUserFromTeas?.username || 'MounTea drinker';
 
+  const displayBio = authUser?.bio?.trim() || 'Add a short bio in settings';
+
   return (
     <ImageBackground
       source={require('../../assets/images/HomeBG.png')}
@@ -159,7 +152,7 @@ export default function ProfileScreen() {
           paddingBottom: SPACING.xl,
         }}
       >
-        {/* Avatar + settings (logout) */}
+        {/* Avatar + settings */}
         <View
           style={{
             alignItems: 'center',
@@ -181,9 +174,9 @@ export default function ProfileScreen() {
               }}
             />
 
-            {/* Settings icon → voorlopig logout */}
+            {/* Settings icon → Settings page */}
             <Pressable
-              onPress={handleLogout}
+              onPress={goToSettings}
               style={{
                 position: 'absolute',
                 right: -6,
@@ -201,7 +194,7 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
 
-          {/* Naam + subtitel */}
+          {/* Naam + bio */}
           <Text
             style={[
               TYPO.display1,
@@ -223,7 +216,7 @@ export default function ProfileScreen() {
               textAlign: 'center',
             }}
           >
-            Tea drinker since 1990
+            {displayBio}
           </Text>
         </View>
 
