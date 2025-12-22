@@ -2,7 +2,7 @@
 
 import { useMyTeas } from '@/data/my-teas';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ImageBackground,
@@ -15,13 +15,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import TeaRowCard from '../../components/TeaRowCard';
-import { getCurrentUser } from '../../data/auth';
 import { getFavorites, toggleFavorite } from '../../data/favorites';
+import useMe from '../../data/me';
 import { COLORS, SPACING, TYPO } from '../theme';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
+  const { user } = useMe();
 
   const {
     data: myTeas,
@@ -35,9 +37,6 @@ export default function ProfileScreen() {
   const [savedCount, setSavedCount] = useState(0);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
-  // auth-user uit AsyncStorage (ingelogde user)
-  const [authUser, setAuthUser] = useState<any | null>(null);
-
   // favorites ophalen voor huidige user
   const loadFavorites = useCallback(async () => {
     if (!userId) {
@@ -50,8 +49,7 @@ export default function ProfileScreen() {
       const list = Array.isArray(favs) ? favs : [];
       setSavedCount(list.length);
       setSavedIds(new Set(list.map((t: any) => t._id)));
-    } catch (e) {
-      console.warn('Failed to load favorites', e);
+    } catch {
       setSavedCount(0);
       setSavedIds(new Set());
     }
@@ -62,15 +60,14 @@ export default function ProfileScreen() {
   }, [loadFavorites]);
 
   const onRefresh = useCallback(() => {
-    mutate(); // reload myTeas
-    loadFavorites(); // reload saved teas count + ids
+    mutate();
+    loadFavorites();
   }, [mutate, loadFavorites]);
 
   function goToSettings() {
     router.push('/(home)/settings' as any);
   }
 
-  // toggle favorite vanuit profile (plusje op rowcard)
   const handleToggleSaved = useCallback(
     async (teaId: string) => {
       if (!userId) return;
@@ -79,36 +76,14 @@ export default function ProfileScreen() {
         const favorites = Array.isArray(res.favorites) ? res.favorites : [];
         setSavedCount(favorites.length);
         setSavedIds(new Set(favorites.map((t: any) => t._id)));
-      } catch (e) {
-        console.warn('Failed to toggle favorite from profile', e);
-        // fallback: opnieuw laden
+      } catch {
         loadFavorites();
       }
     },
     [userId, loadFavorites]
   );
 
-  // auth user ophalen telkens wanneer Profile in focus komt
-  useFocusEffect(
-    useCallback(() => {
-      let isActive = true;
-
-      async function loadUser() {
-        const u = await getCurrentUser();
-        if (isActive) {
-          setAuthUser(u);
-        }
-      }
-
-      loadUser();
-
-      return () => {
-        isActive = false;
-      };
-    }, [])
-  );
-
-  // unieke users op basis van alle teas (alleen als fallback voor naam)
+  // fallback username uit teas (alleen als backend user nog niet geladen is)
   const distinctUsers = useMemo(() => {
     const map = new Map<string, { _id: string; username: string }>();
     for (const t of allTeas) {
@@ -131,9 +106,12 @@ export default function ProfileScreen() {
   if (error) return <Text selectable>{String(error)}</Text>;
 
   const displayName =
-    authUser?.username || currentUserFromTeas?.username || 'MounTea drinker';
+    user?.username ||
+    currentUserFromTeas?.username ||
+    'MounTea drinker';
 
-  const displayBio = authUser?.bio?.trim() || 'Add a short bio in settings';
+  const displayBio =
+    user?.bio?.trim() || 'Add a short bio in settings';
 
   return (
     <ImageBackground
@@ -153,18 +131,8 @@ export default function ProfileScreen() {
         }}
       >
         {/* Avatar + settings */}
-        <View
-          style={{
-            alignItems: 'center',
-            marginBottom: SPACING.lg,
-          }}
-        >
-          <View
-            style={{
-              marginBottom: SPACING.md,
-              position: 'relative',
-            }}
-          >
+        <View style={{ alignItems: 'center', marginBottom: SPACING.lg }}>
+          <View style={{ marginBottom: SPACING.md, position: 'relative' }}>
             <View
               style={{
                 width: 120,
@@ -174,7 +142,6 @@ export default function ProfileScreen() {
               }}
             />
 
-            {/* Settings icon → Settings page */}
             <Pressable
               onPress={goToSettings}
               style={{
@@ -194,7 +161,6 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
 
-          {/* Naam + bio */}
           <Text
             style={[
               TYPO.display1,
@@ -207,6 +173,7 @@ export default function ProfileScreen() {
           >
             {displayName}
           </Text>
+
           <Text
             style={{
               fontFamily: 'System',
@@ -242,116 +209,42 @@ export default function ProfileScreen() {
               paddingRight: SPACING.md,
             }}
           >
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginBottom: 4,
-              }}
-            >
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
               <Ionicons
                 name="bookmark-outline"
                 size={16}
                 color={COLORS.primaryTextOnDark}
                 style={{ marginRight: 6 }}
               />
-              <Text
-                style={{
-                  color: COLORS.primaryTextOnDark,
-                  fontWeight: '700',
-                  fontSize: 16,
-                }}
-              >
+              <Text style={{ color: COLORS.primaryTextOnDark, fontWeight: '700', fontSize: 16 }}>
                 {savedCount.toString().padStart(2, '0')}
               </Text>
             </View>
-            <Text
-              style={{
-                color: COLORS.primaryTextOnDark,
-                fontSize: 13,
-              }}
-            >
+            <Text style={{ color: COLORS.primaryTextOnDark, fontSize: 13 }}>
               Saved Teas
             </Text>
           </View>
 
           {/* Posted teas */}
-          <View
-            style={{
-              flex: 1,
-              alignItems: 'center',
-              paddingLeft: SPACING.md,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginBottom: 4,
-              }}
-            >
+          <View style={{ flex: 1, alignItems: 'center', paddingLeft: SPACING.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
               <Ionicons
                 name="leaf-outline"
                 size={16}
                 color={COLORS.primaryTextOnDark}
                 style={{ marginRight: 6 }}
               />
-              <Text
-                style={{
-                  color: COLORS.primaryTextOnDark,
-                  fontWeight: '700',
-                  fontSize: 16,
-                }}
-              >
+              <Text style={{ color: COLORS.primaryTextOnDark, fontWeight: '700', fontSize: 16 }}>
                 {totalTeas.toString().padStart(2, '0')}
               </Text>
             </View>
-            <Text
-              style={{
-                color: COLORS.primaryTextOnDark,
-                fontSize: 13,
-              }}
-            >
+            <Text style={{ color: COLORS.primaryTextOnDark, fontSize: 13 }}>
               Posted Teas
             </Text>
           </View>
         </View>
 
-        {/* Simple empty-state i.p.v. user-picker */}
-        {myTeas.length === 0 && (
-          <View
-            style={{
-              marginBottom: SPACING.lg,
-              backgroundColor: COLORS.backgroundAlt,
-              borderRadius: 16,
-              padding: SPACING.md,
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: 'System',
-                fontWeight: '600',
-                fontSize: 15,
-                marginBottom: 6,
-                color: COLORS.primaryDark,
-              }}
-            >
-              No teas yet
-            </Text>
-            <Text
-              style={{
-                fontFamily: 'System',
-                fontSize: 13,
-                color: COLORS.primaryDark,
-              }}
-            >
-              You haven{"'"}t posted any teas yet. Create your first post on the
-              post tab.
-            </Text>
-          </View>
-        )}
-
-        {/* Posts titel */}
+        {/* Posts */}
         <Text
           style={{
             fontFamily: 'System',
@@ -364,7 +257,6 @@ export default function ProfileScreen() {
           Posts
         </Text>
 
-        {/* Eigen teas als TeaRowCard */}
         {myTeas.length > 0 ? (
           myTeas.map((tea: any) => (
             <TeaRowCard
@@ -384,13 +276,7 @@ export default function ProfileScreen() {
             />
           ))
         ) : (
-          <Text
-            style={{
-              fontFamily: 'System',
-              fontSize: 13,
-              color: COLORS.primaryDark,
-            }}
-          >
+          <Text style={{ fontFamily: 'System', fontSize: 13, color: COLORS.primaryDark }}>
             No posts yet. Share your first tea on the Home tab.
           </Text>
         )}

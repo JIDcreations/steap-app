@@ -15,12 +15,16 @@ export async function login(username, password) {
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Login failed');
 
-  const user = data.user;
-  await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
-  return user;
+  // ✅ store ONLY the id
+  await AsyncStorage.setItem(
+    USER_KEY,
+    JSON.stringify({ id: data.user.id })
+  );
+
+  return data.user;
 }
 
-/** Register new user with username + password */
+/** Register new user */
 export async function register(username, password, avatarColor = '#C2A98B') {
   const res = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
@@ -31,18 +35,21 @@ export async function register(username, password, avatarColor = '#C2A98B') {
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Register failed');
 
-  const user = data.user;
-  await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
-  return user;
+  await AsyncStorage.setItem(
+    USER_KEY,
+    JSON.stringify({ id: data.user.id })
+  );
+
+  return data.user;
 }
 
-/** Get the currently stored user */
+/** Get current auth session (ONLY id) */
 export async function getCurrentUser() {
   const raw = await AsyncStorage.getItem(USER_KEY);
-  return raw ? JSON.parse(raw) : null;
+  return raw ? JSON.parse(raw) : null; // { id }
 }
 
-/** Remove the stored user (logout) */
+/** Logout */
 export async function logout() {
   await AsyncStorage.removeItem(USER_KEY);
 }

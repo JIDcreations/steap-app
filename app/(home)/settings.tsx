@@ -1,7 +1,6 @@
-// app/(home)/settings.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ImageBackground,
   Keyboard,
@@ -13,15 +12,13 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSWRConfig } from 'swr';
 
+import { useToastPill } from '@/components/ToastPill';
 import { AuthButton } from '../../components/AuthButton';
 import BioInput from '../../components/BioInput';
-import { logout } from '../../data/auth';
+import { getCurrentUser, logout } from '../../data/auth';
 import useBioUpdate from '../../data/bio-update';
 import useMe, { ME_KEY } from '../../data/me';
 import { COLORS, SPACING, TYPO } from '../theme';
-
-// Toast
-import { useToastPill } from '@/components/ToastPill';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -29,15 +26,34 @@ export default function SettingsScreen() {
 
   const { user } = useMe();
   const { trigger, isMutating, error } = useBioUpdate();
-
   const { show, Toast } = useToastPill({ COLORS, SPACING, TYPO });
 
+  const [userId, setUserId] = useState<string | null>(null);
   const [bio, setBio] = useState('');
+  const [initialBio, setInitialBio] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // ✅ track keyboard height so toast can sit above it
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
+  // ✅ load auth id (SINGLE SOURCE OF TRUTH)
+  useEffect(() => {
+    async function loadAuth() {
+      const auth = await getCurrentUser();
+      setUserId(auth?.id ?? null);
+    }
+    loadAuth();
+  }, []);
+
+  // ✅ init bio from backend user
+  useEffect(() => {
+    if (user?.bio !== undefined) {
+      const value = user.bio || '';
+      setBio(value);
+      setInitialBio(value);
+    }
+  }, [user]);
+
+  // keyboard tracking (toast position)
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', e => {
       setKeyboardHeight(e.endCoordinates?.height ?? 0);
@@ -52,17 +68,6 @@ export default function SettingsScreen() {
     };
   }, []);
 
-  const userId = useMemo(() => {
-    if (!user) return null;
-    return (user as any).id || (user as any)._id || null;
-  }, [user]);
-
-  useEffect(() => {
-    if (user && (user as any).bio !== undefined) {
-      setBio(((user as any).bio as string) || '');
-    }
-  }, [user]);
-
   async function handleSave() {
     if (!userId) return;
 
@@ -70,7 +75,9 @@ export default function SettingsScreen() {
       setSaving(true);
 
       const updatedUser = await trigger(userId, bio.trim());
+
       mutate(ME_KEY, updatedUser, { revalidate: false });
+      setInitialBio(bio.trim());
 
       show({ message: 'Bio saved', icon: 'checkmark-circle' });
     } finally {
@@ -84,9 +91,14 @@ export default function SettingsScreen() {
     router.replace('/login' as Href);
   }
 
-  const disabledSave = saving || isMutating || !userId;
+  const hasChanged = bio.trim() !== initialBio.trim();
 
-  // ✅ toast bottom: if keyboard open -> sit above it, else normal bottom
+  const disabledSave =
+    saving ||
+    isMutating ||
+    !userId ||
+    !hasChanged;
+
   const toastBottom = keyboardHeight > 0 ? keyboardHeight + 16 : 34;
 
   return (
@@ -95,7 +107,6 @@ export default function SettingsScreen() {
       style={styles.bg}
       resizeMode="cover"
     >
-      {/* Toast overlay (above keyboard) */}
       <Toast bottom={toastBottom} />
 
       <KeyboardAwareScrollView
@@ -107,7 +118,7 @@ export default function SettingsScreen() {
         disableScrollOnKeyboardHide
       >
         <View style={styles.content}>
-          {/* Top block: SETTINGS + back */}
+          {/* Header */}
           <View style={styles.topBlock}>
             <Pressable onPress={() => router.back()} style={styles.backBtn}>
               <Ionicons name="chevron-back" size={20} color="#ffffff" />
@@ -115,10 +126,10 @@ export default function SettingsScreen() {
 
             <Text style={styles.pageTitle}>SETTINGS</Text>
 
-            <View style={{ width: 44, height: 44 }} />
+            <View style={{ width: 44 }} />
           </View>
 
-          {/* Bottom block */}
+          {/* Form */}
           <View style={styles.bottomBlock}>
             <View style={styles.formBlock}>
               <BioInput
@@ -157,7 +168,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   bg: {
     flex: 1,
-    justifyContent: 'flex-start',
     paddingHorizontal: SPACING.xl,
   },
   scrollContent: {
@@ -184,7 +194,6 @@ const styles = StyleSheet.create({
   pageTitle: {
     ...TYPO.display2,
     color: '#ffffff',
-    textAlign: 'center',
     letterSpacing: 2,
   },
   bottomBlock: {
