@@ -269,7 +269,7 @@ export default function TeaDetailScreen() {
 
             {/* Add to library button */}
             <PostButton
-              title={isSaved ? 'In your library' : 'Add to library'}
+              title={isSaved ? 'Remove from library' : 'Add to library'}
               onPress={handleAddToLibrary}
               loading={saving}
               disabled={!userId}
