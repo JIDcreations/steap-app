@@ -133,13 +133,6 @@ export default function LibraryScreen() {
     return map;
   }, [teaTypes]);
 
-  /**
-   * Normalize tea.type:
-   * - object with _id => use it
-   * - object without _id but with name => map name -> id
-   * - string ObjectId => use it
-   * - string name => map name -> id
-   */
   const getTeaTypeId = useCallback(
     (tea: any): string | null => {
       const t = tea?.type;
@@ -159,9 +152,7 @@ export default function LibraryScreen() {
 
       if (typeof t === 'string') {
         if (isObjectId(t)) return t;
-
-        const mapped = typeIdByNameLower.get(t.toLowerCase());
-        return mapped ?? null;
+        return typeIdByNameLower.get(t.toLowerCase()) ?? null;
       }
 
       return null;
@@ -193,7 +184,6 @@ export default function LibraryScreen() {
     [isObjectId, typeNameById]
   );
 
-  // My posted teas
   const myPostedTeas = useMemo(() => {
     if (!userId) return [];
     if (!Array.isArray(allTeas)) return [];
@@ -205,10 +195,8 @@ export default function LibraryScreen() {
     });
   }, [allTeas, userId]);
 
-  // Dataset choice
   const sourceList = postedOnly ? myPostedTeas : favorites;
 
-  // Filtering
   const filtered = useMemo(() => {
     if (!Array.isArray(sourceList)) return [];
 
@@ -250,7 +238,7 @@ export default function LibraryScreen() {
           paddingBottom: SPACING.xl,
         }}
       >
-        {/* Title */}
+        {/* Title + subtitle */}
         <View style={{ alignItems: 'center', marginBottom: SPACING.xl }}>
           <Text
             style={[
@@ -259,6 +247,22 @@ export default function LibraryScreen() {
             ]}
           >
             Library
+          </Text>
+
+          <Text
+            style={[
+              TYPO.body ?? TYPO.cardSubtitle ?? TYPO.small,
+              {
+                color: COLORS.primaryDark,
+                opacity: 0.7,
+                textAlign: 'center',
+                marginTop: 6,
+                maxWidth: 320,
+                lineHeight: 20,
+              },
+            ]}
+          >
+            Teas you saved for later.
           </Text>
         </View>
 
@@ -276,16 +280,16 @@ export default function LibraryScreen() {
           />
         </View>
 
-        {/* Chips: All → Posted → Types */}
+        {/* Chips */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={{
             marginBottom: SPACING.lg,
-            marginHorizontal: -SPACING.lg, // break out of page padding
+            marginHorizontal: -SPACING.lg,
           }}
           contentContainerStyle={{
-            paddingHorizontal: SPACING.lg, // keep nice gutter
+            paddingHorizontal: SPACING.lg,
           }}
         >
           <View style={{ flexDirection: 'row' }}>
@@ -331,10 +335,7 @@ export default function LibraryScreen() {
             return (
               <View
                 key={tea._id}
-                style={{
-                  width: '48%',
-                  marginBottom: 20,
-                }}
+                style={{ width: '48%', marginBottom: 20 }}
               >
                 <TeaCard
                   name={tea.name}
