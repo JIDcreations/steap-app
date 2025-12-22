@@ -284,3 +284,8 @@ export default function ProfileScreen() {
     </ImageBackground>
   );
 }
+
+/**
+ * AI-based code assistance was used during development
+ * for guidance, explanation and debugging.
+ */

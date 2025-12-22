@@ -365,3 +365,8 @@ export default function LibraryScreen() {
     </ImageBackground>
   );
 }
+
+/**
+ * AI-based code assistance was used during development
+ * for guidance, explanation and debugging.
+ */

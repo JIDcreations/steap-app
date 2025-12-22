@@ -426,3 +426,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
+
+
+/**
+ * AI-based code assistance was used during development
+ * for guidance, explanation and debugging.
+ */
