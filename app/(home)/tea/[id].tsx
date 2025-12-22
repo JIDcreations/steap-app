@@ -200,7 +200,9 @@ export default function TeaDetailScreen() {
                   style={{ marginRight: 6 }}
                 />
                 <Text style={styles.metaText}>
-                  {tea.steepTime ? `${tea.steepTime} min` : 'Brew time unknown'}
+                  {tea.steepTime
+                    ? `Infusion time · ${tea.steepTime} min`
+                    : 'Infusion time unknown'}
                 </Text>
               </View>
 
@@ -298,7 +300,7 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    height: HEADER_HEIGHT, // ✅ fixed => consistent layout
+    height: HEADER_HEIGHT,
     paddingHorizontal: SPACING.lg,
     justifyContent: 'flex-start',
     paddingBottom: SPACING.lg,
@@ -328,7 +330,7 @@ const styles = StyleSheet.create({
     fontSize: 52,
     color: '#D6F4CD',
     textAlign: 'center',
-    marginBottom: 24, // was 32 (slightly tighter for 2 lines)
+    marginBottom: 24,
     textTransform: 'lowercase',
   },
 
