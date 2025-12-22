@@ -1,7 +1,5 @@
 // data/favorites.ts
-
-// zelfde basis als in data/auth.js
-const API_BASE = process.env.EXPO_PUBLIC_API_URL;
+import { API_URL } from '@/constants/Api';
 
 export type ToggleResult = {
   ok: boolean;
@@ -9,15 +7,18 @@ export type ToggleResult = {
   favorites: any[];
 };
 
-export async function toggleFavorite(userId: string, teaId: string): Promise<ToggleResult> {
-  const res = await fetch(`${API_BASE}/api/users/${userId}/favorites`, {
+export async function toggleFavorite(
+  userId: string,
+  teaId: string
+): Promise<ToggleResult> {
+  const res = await fetch(`${API_URL}/users/${userId}/favorites`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ teaId }),
   });
 
   if (!res.ok) {
-    const text = await res.text();
+    const text = await res.text().catch(() => '');
     throw new Error(`Favorite failed: ${res.status} ${text}`);
   }
 
@@ -25,13 +26,12 @@ export async function toggleFavorite(userId: string, teaId: string): Promise<Tog
 }
 
 export async function getFavorites(userId: string) {
-  const res = await fetch(`${API_BASE}/api/users/${userId}/favorites`);
+  const res = await fetch(`${API_URL}/users/${userId}/favorites`);
 
   if (!res.ok) {
-    const text = await res.text();
+    const text = await res.text().catch(() => '');
     throw new Error(`Get favorites failed: ${res.status} ${text}`);
   }
 
-  // backend: returns populated tea objects array
   return res.json();
 }
