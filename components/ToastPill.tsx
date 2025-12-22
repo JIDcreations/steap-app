@@ -1,8 +1,6 @@
-// components/ToastPill.tsx
-
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Animated, Text } from 'react-native';
+import { Animated } from 'react-native';
 
 type ToastPillOptions = {
   message: string;
@@ -31,42 +29,110 @@ export function useToastPill(theme: ThemeLike) {
   const [icon, setIcon] =
     useState<keyof typeof Ionicons.glyphMap>('checkmark-circle');
 
+  // main anim (0..1)
   const anim = useRef(new Animated.Value(0)).current;
+
+  // micro anims
+  const iconPop = useRef(new Animated.Value(0)).current; // 0..1
+  const textFade = useRef(new Animated.Value(0)).current; // 0..1
+
+  // cancel previous hide timers when spammed
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearHideTimer = () => {
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current);
+      hideTimer.current = null;
+    }
+  };
 
   const show = useCallback(
     (opts: ToastPillOptions) => {
+      clearHideTimer();
+
       setMessage(opts.message);
       setIcon(opts.icon ?? 'checkmark-circle');
-
       setVisible(true);
-      anim.setValue(0);
 
-      Animated.timing(anim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => {
-        setTimeout(() => {
+      // reset
+      anim.stopAnimation();
+      iconPop.stopAnimation();
+      textFade.stopAnimation();
+
+      anim.setValue(0);
+      iconPop.setValue(0);
+      textFade.setValue(0);
+
+      // entrance: spring + settle
+      Animated.parallel([
+        Animated.spring(anim, {
+          toValue: 1,
+          friction: 7,
+          tension: 160,
+          useNativeDriver: true,
+        }),
+        Animated.sequence([
+          Animated.spring(iconPop, {
+            toValue: 1,
+            friction: 5,
+            tension: 220,
+            useNativeDriver: true,
+          }),
+          Animated.timing(iconPop, {
+            toValue: 0,
+            duration: 160,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.timing(textFade, {
+          toValue: 1,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // auto-hide
+      hideTimer.current = setTimeout(() => {
+        Animated.parallel([
           Animated.timing(anim, {
             toValue: 0,
             duration: 200,
             useNativeDriver: true,
-          }).start(() => {
-            setVisible(false);
-          });
-        }, 1400);
-      });
+          }),
+          Animated.timing(textFade, {
+            toValue: 0,
+            duration: 140,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          setVisible(false);
+        });
+      }, 1500);
     },
-    [anim]
+    [anim, iconPop, textFade]
   );
 
   const toastOpacity = anim;
   const toastTranslateY = useMemo(() => {
     return anim.interpolate({
       inputRange: [0, 1],
-      outputRange: [20, 0],
+      outputRange: [24, 0],
     });
   }, [anim]);
+
+  const toastScale = useMemo(() => {
+    return anim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.98, 1],
+    });
+  }, [anim]);
+
+  const iconScale = useMemo(() => {
+    return iconPop.interpolate({
+      inputRange: [0, 1],
+      outputRange: [1, 1.12],
+    });
+  }, [iconPop]);
 
   const Toast = useCallback(
     ({ bottom }: { bottom: number }) => {
@@ -86,28 +152,36 @@ export function useToastPill(theme: ThemeLike) {
             flexDirection: 'row',
             alignItems: 'center',
             opacity: toastOpacity,
-            transform: [{ translateY: toastTranslateY }],
+            transform: [
+              { translateY: toastTranslateY },
+              { scale: toastScale },
+            ],
             shadowColor: '#000',
-            shadowOpacity: 0.2,
-            shadowRadius: 6,
-            shadowOffset: { width: 0, height: 3 },
-            elevation: 4,
+            shadowOpacity: 0.22,
+            shadowRadius: 8,
+            shadowOffset: { width: 0, height: 4 },
+            elevation: 5,
           }}
         >
-          <Ionicons
-            name={icon}
-            size={22}
-            color={COLORS.primaryTextOnDark}
-          />
-          <Text
+          <Animated.View style={{ transform: [{ scale: iconScale }] }}>
+            <Ionicons
+              name={icon}
+              size={22}
+              color={COLORS.primaryTextOnDark}
+            />
+          </Animated.View>
+
+          <Animated.Text
             style={{
               ...TYPO.body,
               color: COLORS.primaryTextOnDark,
               marginLeft: 8,
+              opacity: textFade,
             }}
+            numberOfLines={2}
           >
             {message}
-          </Text>
+          </Animated.Text>
         </Animated.View>
       );
     },
@@ -122,6 +196,9 @@ export function useToastPill(theme: ThemeLike) {
       TYPO.body,
       toastOpacity,
       toastTranslateY,
+      toastScale,
+      iconScale,
+      textFade,
     ]
   );
 

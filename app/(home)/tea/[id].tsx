@@ -1,8 +1,10 @@
 // app/(home)/tea/[id].tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
   ImageBackground,
   Pressable,
   ScrollView,
@@ -41,6 +43,35 @@ export default function TeaDetailScreen() {
 
   // ✅ toast (same as post)
   const { show: showToast, Toast } = useToastPill({ COLORS, SPACING, TYPO });
+
+  // ✅ small blob grow animation (only visual, no layout changes)
+  const blobAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // reset + play when screen mounts / id changes
+    blobAnim.setValue(0);
+    Animated.timing(blobAnim, {
+      toValue: 1,
+      duration: 520,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [blobAnim, teaId]);
+
+  const blobAnimatedStyle = {
+    transform: [
+      {
+        scale: blobAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.9, 1],
+        }),
+      },
+    ],
+    opacity: blobAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.6, 1],
+    }),
+  };
 
   // load current user
   useEffect(() => {
@@ -138,10 +169,11 @@ export default function TeaDetailScreen() {
           {/* HEADER (fixed height => consistent body spacing) */}
           <View style={styles.header}>
             {/* BLOB */}
-            <View
+            <Animated.View
               style={[
                 styles.headerBlob,
                 { backgroundColor: bgColor, top: BLOB_TOP },
+                blobAnimatedStyle,
               ]}
             />
 
@@ -426,7 +458,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
-
 
 /**
  * AI-based code assistance was used during development

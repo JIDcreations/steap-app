@@ -4,14 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  ImageBackground,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ImageBackground, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -19,6 +12,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Chip from '../../components/Chip';
 import FormField from '../../components/FormField';
 import PostButton from '../../components/PostButton';
+import RecipeForm from '../../components/RecipeForm';
 import useTeaPost from '../../data/tea-post';
 import useTeaTypes from '../../data/tea-types';
 import { COLORS, SPACING, TYPO } from '../theme';
@@ -72,8 +66,7 @@ export default function PostTea() {
 
   const [color, setColor] =
     useState<(typeof COLOR_SWATCHES)[number] | null>(COLOR_SWATCHES[1]);
-  const [moodTag, setMoodTag] =
-    useState<(typeof MOODS)[number] | null>('cozy');
+  const [moodTag, setMoodTag] = useState<(typeof MOODS)[number] | null>('cozy');
 
   // Recipe state
   const [recipeIngredients, setRecipeIngredients] = useState<string>('');
@@ -105,11 +98,8 @@ export default function PostTea() {
     })();
   }, []);
 
-  const {
-    items: teaTypes,
-    isLoading: typesLoading,
-    error: typesError,
-  } = useTeaTypes();
+  const { items: teaTypes, isLoading: typesLoading, error: typesError } =
+    useTeaTypes();
 
   useEffect(() => {
     if (!typesLoading && teaTypes?.length && !typeId) {
@@ -136,13 +126,7 @@ export default function PostTea() {
     const validMood = !moodTag || MOODS.includes(moodTag as any);
 
     return (
-      n &&
-      t &&
-      validSteep &&
-      validRating &&
-      validColor &&
-      validMood &&
-      !isMutating
+      n && t && validSteep && validRating && validColor && validMood && !isMutating
     );
   }, [userId, name, typeId, steepTime, rating, color, moodTag, isMutating]);
 
@@ -184,10 +168,7 @@ export default function PostTea() {
         TEAS_KEY,
         (current: any) => {
           const arr = Array.isArray(current) ? current : [];
-          const next = [
-            created,
-            ...arr.filter((t: any) => t?._id !== created?._id),
-          ];
+          const next = [created, ...arr.filter((t: any) => t?._id !== created?._id)];
           return next;
         },
         false
@@ -211,9 +192,7 @@ export default function PostTea() {
       setRecipeAmount('');
       setRecipeSteps('');
 
-      const msg = created?.name
-        ? `“${created.name}” has been posted`
-        : 'Tea posted';
+      const msg = created?.name ? `“${created.name}” has been posted` : 'Tea posted';
       showToast({ message: msg, icon: 'checkmark-circle' });
     } catch (e) {
       console.warn('Failed to create tea', e);
@@ -285,7 +264,7 @@ export default function PostTea() {
           <View style={{ marginBottom: SPACING.md }}>
             <Text
               style={{
-                fontSize: 14,
+                fontSize: 16,
                 color: COLORS.primaryDark,
                 marginBottom: 6,
               }}
@@ -297,9 +276,7 @@ export default function PostTea() {
               <Text style={{ color: COLORS.primaryDark }}>Loading types…</Text>
             )}
 
-            {typesError && (
-              <Text style={{ color: 'red' }}>Failed to load tea types</Text>
-            )}
+            {typesError && <Text style={{ color: 'red' }}>Failed to load tea types</Text>}
 
             {!typesLoading && !typesError && (
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -330,7 +307,7 @@ export default function PostTea() {
           <View style={{ marginBottom: SPACING.md }}>
             <Text
               style={{
-                fontSize: 14,
+                fontSize: 16,
                 color: COLORS.primaryDark,
                 marginBottom: 6,
               }}
@@ -357,7 +334,6 @@ export default function PostTea() {
               })}
             </View>
 
-            
             {numericRating === 0 ? (
               <Text style={{ marginTop: 6, color: COLORS.textSoft }}>
                 Tap a star to rate
@@ -365,112 +341,25 @@ export default function PostTea() {
             ) : null}
           </View>
 
-          {/* RECIPE */}
-          <View style={{ marginBottom: SPACING.md }}>
-            <Text
-              style={{
-                fontSize: 14,
-                color: COLORS.primaryDark,
-                marginBottom: 6,
-              }}
-            >
-              Recipe
-            </Text>
-
-            <TextInput
-              value={recipeIngredients}
-              onChangeText={setRecipeIngredients}
-              placeholder="Ingredients (comma separated) e.g. mint, ginger, green tea"
-              placeholderTextColor={COLORS.textSoft}
-              style={{
-                borderWidth: 1,
-                borderColor: COLORS.primaryDark,
-                borderRadius: 8,
-                paddingHorizontal: SPACING.md,
-                backgroundColor: 'transparent',
-                paddingVertical: 10,
-                marginBottom: 10,
-              }}
-            />
-
-            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
-              <View style={{ flex: 1 }}>
-                <TextInput
-                  value={recipeWaterMl}
-                  onChangeText={setRecipeWaterMl}
-                  placeholder="Water (ml)"
-                  placeholderTextColor={COLORS.textSoft}
-                  keyboardType="number-pad"
-                  style={{
-                    borderWidth: 1,
-                    borderColor: COLORS.primaryDark,
-                    borderRadius: 8,
-                    paddingHorizontal: SPACING.md,
-                    backgroundColor: 'transparent',
-                    paddingVertical: 10,
-                  }}
-                />
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <TextInput
-                  value={recipeTempC}
-                  onChangeText={setRecipeTempC}
-                  placeholder="Temp (°C)"
-                  placeholderTextColor={COLORS.textSoft}
-                  keyboardType="number-pad"
-                  style={{
-                    borderWidth: 1,
-                    borderColor: COLORS.primaryDark,
-                    borderRadius: 8,
-                    paddingHorizontal: SPACING.md,
-                    backgroundColor: 'transparent',
-                    paddingVertical: 10,
-                  }}
-                />
-              </View>
-            </View>
-
-            <TextInput
-              value={recipeAmount}
-              onChangeText={setRecipeAmount}
-              placeholder="Amount e.g. 2g / 1 tsp / 1 bag"
-              placeholderTextColor={COLORS.textSoft}
-              style={{
-                borderWidth: 1,
-                borderColor: COLORS.primaryDark,
-                borderRadius: 8,
-                paddingHorizontal: SPACING.md,
-                backgroundColor: 'transparent',
-                paddingVertical: 10,
-                marginBottom: 10,
-              }}
-            />
-
-            <TextInput
-              value={recipeSteps}
-              onChangeText={setRecipeSteps}
-              placeholder="Steps (optional)"
-              placeholderTextColor={COLORS.textSoft}
-              multiline
-              style={{
-                borderWidth: 1,
-                borderColor: COLORS.primaryDark,
-                borderRadius: 8,
-                paddingHorizontal: SPACING.md,
-                backgroundColor: 'transparent',
-                minHeight: 90,
-                paddingVertical: 10,
-                textAlignVertical: 'top',
-              }}
-            />
-          </View>
+          {/* RECIPE (moved into component, identical UI) */}
+          <RecipeForm
+            recipeIngredients={recipeIngredients}
+            setRecipeIngredients={setRecipeIngredients}
+            recipeWaterMl={recipeWaterMl}
+            setRecipeWaterMl={setRecipeWaterMl}
+            recipeTempC={recipeTempC}
+            setRecipeTempC={setRecipeTempC}
+            recipeAmount={recipeAmount}
+            setRecipeAmount={setRecipeAmount}
+            recipeSteps={recipeSteps}
+            setRecipeSteps={setRecipeSteps}
+          />
 
           {/* HOW WAS IT */}
           <View style={{ marginBottom: SPACING.md }}>
             <Text
               style={{
-                fontSize: 14,
+                fontSize: 16,
                 color: COLORS.primaryDark,
                 marginBottom: 6,
               }}
@@ -500,7 +389,7 @@ export default function PostTea() {
           <View style={{ marginBottom: SPACING.md }}>
             <Text
               style={{
-                fontSize: 14,
+                fontSize: 16,
                 color: COLORS.primaryDark,
                 marginBottom: 6,
               }}
@@ -536,7 +425,7 @@ export default function PostTea() {
           <View style={{ marginBottom: SPACING.lg }}>
             <Text
               style={{
-                fontSize: 14,
+                fontSize: 16,
                 color: COLORS.primaryDark,
                 marginBottom: 6,
               }}
@@ -582,7 +471,6 @@ export default function PostTea() {
     </ImageBackground>
   );
 }
-
 
 /**
  * AI-based code assistance was used during development

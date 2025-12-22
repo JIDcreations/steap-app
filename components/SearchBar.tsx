@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    Pressable,
-    StyleSheet,
-    TextInput,
-    TextInputProps,
-    View,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  TextInputProps,
+  View,
 } from 'react-native';
 
 import { COLORS, FONTS, RADIUS, SPACING } from '../app/theme';

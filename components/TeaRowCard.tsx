@@ -1,7 +1,5 @@
-// components/TeaRowCard.tsx
-
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   Animated,
   GestureResponderEvent,
@@ -35,6 +33,41 @@ export default function TeaRowCard({
   onToggleSaved,
   onPressCard,
 }: Props) {
+  // Card press animation (0..1)
+  const cardPress = useRef(new Animated.Value(0)).current;
+
+  const onPressIn = () => {
+    Animated.spring(cardPress, {
+      toValue: 1,
+      friction: 7,
+      tension: 170,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onPressOut = () => {
+    Animated.spring(cardPress, {
+      toValue: 0,
+      friction: 7,
+      tension: 160,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const cardTransform = useMemo(
+    () => ({
+      transform: [
+        {
+          scale: cardPress.interpolate({
+            inputRange: [0, 1],
+            outputRange: [1, 0.988],
+          }),
+        },
+      ],
+    }),
+    [cardPress]
+  );
+
   // rotatie voor de flower (zoals bij verticale kaart)
   const rotation = useRef(new Animated.Value(saved ? 1 : 0)).current;
 
@@ -55,26 +88,47 @@ export default function TeaRowCard({
           outputRange: ['0deg', '-8deg'],
         }),
       },
+      // subtle follow on press
+      {
+        translateY: cardPress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, 1.5],
+        }),
+      },
+      {
+        scale: cardPress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [1, 0.99],
+        }),
+      },
     ],
   };
 
-  // scale-pop animatie voor de add/check button
-  const scale = useRef(new Animated.Value(1)).current;
+  // smoother icon pop (0..1)
+  const iconPop = useRef(new Animated.Value(0)).current;
 
   const animatePop = () => {
+    iconPop.setValue(0);
     Animated.sequence([
-      Animated.timing(scale, {
-        toValue: 1.15,
-        duration: 100,
+      Animated.spring(iconPop, {
+        toValue: 1,
+        friction: 5,
+        tension: 220,
         useNativeDriver: true,
       }),
-      Animated.timing(scale, {
-        toValue: 1,
-        duration: 100,
+      Animated.timing(iconPop, {
+        toValue: 0,
+        duration: 160,
         useNativeDriver: true,
       }),
     ]).start();
   };
+
+  useEffect(() => {
+    // micro feedback on state change
+    animatePop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saved]);
 
   const handlePressSaved = (event: GestureResponderEvent) => {
     // voorkomen dat de tap ook de card-press triggert
@@ -83,54 +137,63 @@ export default function TeaRowCard({
     onToggleSaved?.();
   };
 
+  const iconScale = useMemo(() => {
+    return iconPop.interpolate({
+      inputRange: [0, 1],
+      outputRange: [1, 1.14],
+    });
+  }, [iconPop]);
+
   return (
-    <Pressable
-      onPress={onPressCard}
-      style={[
-        styles.card,
-        color ? { backgroundColor: color } : null,
-      ]}
-    >
-      {/* Titel + mood links */}
-      <View style={styles.textContainer}>
-        <Text style={styles.name} numberOfLines={1}>
-          {name}
-        </Text>
-
-        <Text style={styles.mood} numberOfLines={1}>
-          {typeName || 'Unknown type'}
-        </Text>
-      </View>
-
-      {/* Rating rechtsboven */}
-      <View style={styles.ratingRow}>
-        <Ionicons
-          name="star"
-          size={16}
-          color={COLORS.accentBadge}
-          style={{ marginRight: 4 }}
-        />
-        <Text style={styles.ratingText}>
-          {typeof rating === 'number' ? rating.toFixed(1) : '—'}
-        </Text>
-      </View>
-
-      {/* Flower + plus button rechtsonder */}
-      <Animated.Image source={FLOWER_IMG} style={[styles.flower, rotateStyle]} />
-
-      <Pressable
-        onPress={handlePressSaved}
-        hitSlop={10}
-        style={[styles.addButton, saved && styles.addButtonSaved]}
+    <Pressable onPress={onPressCard} onPressIn={onPressIn} onPressOut={onPressOut}>
+      <Animated.View
+        style={[
+          styles.card,
+          color ? { backgroundColor: color } : null,
+          cardTransform,
+        ]}
       >
-        <Animated.View style={{ transform: [{ scale }] }}>
+        {/* Titel + mood links */}
+        <View style={styles.textContainer}>
+          <Text style={styles.name} numberOfLines={1}>
+            {name}
+          </Text>
+
+          <Text style={styles.mood} numberOfLines={1}>
+            {typeName || 'Unknown type'}
+          </Text>
+        </View>
+
+        {/* Rating rechtsboven */}
+        <View style={styles.ratingRow}>
           <Ionicons
-            name={saved ? 'checkmark' : 'add'}
-            size={22}
-            color={saved ? '#ffffff' : COLORS.primaryDark}
+            name="star"
+            size={16}
+            color={COLORS.accentBadge}
+            style={{ marginRight: 4 }}
           />
-        </Animated.View>
-      </Pressable>
+          <Text style={styles.ratingText}>
+            {typeof rating === 'number' ? rating.toFixed(1) : '—'}
+          </Text>
+        </View>
+
+        {/* Flower + plus button rechtsonder */}
+        <Animated.Image source={FLOWER_IMG} style={[styles.flower, rotateStyle]} />
+
+        <Pressable
+          onPress={handlePressSaved}
+          hitSlop={10}
+          style={[styles.addButton, saved && styles.addButtonSaved]}
+        >
+          <Animated.View style={{ transform: [{ scale: iconScale }] }}>
+            <Ionicons
+              name={saved ? 'checkmark' : 'add'}
+              size={22}
+              color={saved ? '#ffffff' : COLORS.primaryDark}
+            />
+          </Animated.View>
+        </Pressable>
+      </Animated.View>
     </Pressable>
   );
 }
@@ -153,12 +216,11 @@ const styles = StyleSheet.create({
 
   textContainer: {
     flexShrink: 1,
-    paddingRight: 80, // ruimte voor rating rechts
+    paddingRight: 80,
   },
 
-  // zelfde look als vertical TeaCard titel
   name: {
-    fontFamily: FONTS.heading, // PlayfairDisplay-Bold
+    fontFamily: FONTS.heading,
     fontSize: 32,
     lineHeight: 34,
     color: COLORS.teaCardText,
@@ -206,7 +268,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 2,
-    // geen border in unselected state
   },
 
   addButtonSaved: {

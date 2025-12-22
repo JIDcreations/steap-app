@@ -1,8 +1,9 @@
 // app/(home)/library.tsx
 
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   ImageBackground,
   RefreshControl,
   ScrollView,
@@ -73,22 +74,6 @@ export default function LibraryScreen() {
   useEffect(() => {
     loadFavorites();
   }, [loadFavorites]);
-
-  // AUTO REFRESH ON FOCUS
-  useFocusEffect(
-    useCallback(() => {
-      if (!userId) return;
-      loadFavorites();
-      mutateTeas();
-    }, [userId, loadFavorites, mutateTeas])
-  );
-
-  const isLoading = favoritesLoading || teasLoading;
-
-  const onRefresh = useCallback(() => {
-    loadFavorites();
-    mutateTeas();
-  }, [loadFavorites, mutateTeas]);
 
   // Toggle favorite
   const handleToggleSaved = useCallback(
@@ -221,6 +206,63 @@ export default function LibraryScreen() {
     });
   }, [sourceList, q, selectedTypeId, getTeaTypeId, getTeaTypeName]);
 
+  const isLoading = favoritesLoading || teasLoading;
+
+  const onRefresh = useCallback(() => {
+    loadFavorites();
+    mutateTeas();
+  }, [loadFavorites, mutateTeas]);
+
+  /**
+   * STAGGER (runs every time you navigate to Library)
+   */
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useFocusEffect(
+    useCallback(() => {
+      // keep your existing behavior
+      if (userId) {
+        loadFavorites();
+        mutateTeas();
+      }
+
+      // animate every focus
+      anim.stopAnimation();
+      anim.setValue(0);
+
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 520,
+        useNativeDriver: true,
+      }).start();
+    }, [userId, loadFavorites, mutateTeas, anim])
+  );
+
+  const itemStyleForIndex = useCallback(
+    (index: number) => {
+      const start = Math.min(0.85, index * 0.06);
+      const inputRange = [start, Math.min(1, start + 0.25)];
+
+      const opacity = anim.interpolate({
+        inputRange,
+        outputRange: [0, 1],
+        extrapolate: 'clamp',
+      });
+
+      const translateY = anim.interpolate({
+        inputRange,
+        outputRange: [14, 0],
+        extrapolate: 'clamp',
+      });
+
+      return {
+        opacity,
+        transform: [{ translateY }],
+      };
+    },
+    [anim]
+  );
+
   return (
     <ImageBackground
       source={require('../../assets/images/HomeBG.png')}
@@ -328,14 +370,17 @@ export default function LibraryScreen() {
             justifyContent: 'space-between',
           }}
         >
-          {filtered.map((tea: any) => {
+          {filtered.map((tea: any, index: number) => {
             const isSaved = postedOnly ? savedIds.has(tea._id) : true;
             const typeName = getTeaTypeName(tea);
 
             return (
-              <View
+              <Animated.View
                 key={tea._id}
-                style={{ width: '48%', marginBottom: 20 }}
+                style={[
+                  { width: '48%', marginBottom: 20 },
+                  itemStyleForIndex(index),
+                ]}
               >
                 <TeaCard
                   name={tea.name}
@@ -351,7 +396,7 @@ export default function LibraryScreen() {
                     })
                   }
                 />
-              </View>
+              </Animated.View>
             );
           })}
         </View>

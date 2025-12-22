@@ -1,7 +1,5 @@
-// components/TeaCard.tsx
-
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   Animated,
   GestureResponderEvent,
@@ -35,6 +33,47 @@ export default function TeaCard({
   onToggleSaved,
   onPressCard,
 }: Props) {
+  // Card press animation (smooth spring)
+  const cardPress = useRef(new Animated.Value(0)).current; // 0..1
+
+  const onPressIn = () => {
+    Animated.spring(cardPress, {
+      toValue: 1,
+      friction: 7,
+      tension: 170,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onPressOut = () => {
+    Animated.spring(cardPress, {
+      toValue: 0,
+      friction: 7,
+      tension: 160,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const cardTransform = useMemo(
+    () => ({
+      transform: [
+        {
+          scale: cardPress.interpolate({
+            inputRange: [0, 1],
+            outputRange: [1, 0.985],
+          }),
+        },
+        {
+          translateY: cardPress.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, 1],
+          }),
+        },
+      ],
+    }),
+    [cardPress]
+  );
+
   // Rotatie van de leaf illustratie
   const rotation = useRef(new Animated.Value(saved ? 1 : 0)).current;
 
@@ -55,26 +94,49 @@ export default function TeaCard({
           outputRange: ['0deg', '-8deg'],
         }),
       },
+      {
+        // subtle "follow" on press
+        translateY: cardPress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, 1.5],
+        }),
+      },
+      {
+        scale: cardPress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [1, 0.985],
+        }),
+      },
     ],
   };
 
-  // Pop-animatie voor het plus/check icoon
-  const scale = useRef(new Animated.Value(1)).current;
+  // Pop-animatie voor het plus/check icoon (smoother spring)
+  const iconPop = useRef(new Animated.Value(0)).current; // 0..1
 
   const animatePop = () => {
+    iconPop.setValue(0);
     Animated.sequence([
-      Animated.timing(scale, {
-        toValue: 1.15,
-        duration: 100,
+      Animated.spring(iconPop, {
+        toValue: 1,
+        friction: 5,
+        tension: 220,
         useNativeDriver: true,
       }),
-      Animated.timing(scale, {
-        toValue: 1,
-        duration: 100,
+      Animated.timing(iconPop, {
+        toValue: 0,
+        duration: 160,
         useNativeDriver: true,
       }),
     ]).start();
   };
+
+  // extra micro pulse when saved changes (feel)
+  useEffect(() => {
+    if (saved) animatePop();
+    // also pulse when unsaving (subtle)
+    if (!saved) animatePop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saved]);
 
   const handlePressSaved = (event: GestureResponderEvent) => {
     event.stopPropagation(); // voorkom dat card geopend wordt
@@ -82,56 +144,66 @@ export default function TeaCard({
     onToggleSaved?.();
   };
 
+  const iconScale = iconPop.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.14],
+  });
+
   return (
     <Pressable
       onPress={onPressCard}
-      style={({ pressed }) => [
-        styles.card,
-        color ? { backgroundColor: color } : null,
-        pressed && { transform: [{ scale: 0.98 }] },
-      ]}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
     >
-      {/* Tekstblok */}
-      <View style={styles.textContainer}>
-        <Text style={styles.name} numberOfLines={2}>
-          {name}
-        </Text>
-
-        <Text style={styles.mood} numberOfLines={1}>
-          {typeName || 'Unknown type'}
-        </Text>
-
-        {/* Rating */}
-        <View style={styles.ratingRow}>
-          <Ionicons
-            name="star"
-            size={14}
-            color={COLORS.accentBadge}
-            style={{ marginRight: 4 }}
-          />
-          <Text style={styles.ratingText}>
-            {typeof rating === 'number' ? rating.toFixed(1) : '—'}
-          </Text>
-        </View>
-      </View>
-
-      {/* Leaf illustratie */}
-      <Animated.Image source={LEAF_IMG} style={[styles.leaf, rotateStyle]} />
-
-      {/* Add / Saved knop */}
-      <Pressable
-        onPress={handlePressSaved}
-        hitSlop={10}
-        style={[styles.addButton, saved && styles.addButtonSaved]}
+      <Animated.View
+        style={[
+          styles.card,
+          color ? { backgroundColor: color } : null,
+          cardTransform,
+        ]}
       >
-        <Animated.View style={{ transform: [{ scale }] }}>
-          <Ionicons
-            name={saved ? 'checkmark' : 'add'}
-            size={22}
-            color={saved ? '#ffffff' : COLORS.primaryDark}
-          />
-        </Animated.View>
-      </Pressable>
+        {/* Tekstblok */}
+        <View style={styles.textContainer}>
+          <Text style={styles.name} numberOfLines={2}>
+            {name}
+          </Text>
+
+          <Text style={styles.mood} numberOfLines={1}>
+            {typeName || 'Unknown type'}
+          </Text>
+
+          {/* Rating */}
+          <View style={styles.ratingRow}>
+            <Ionicons
+              name="star"
+              size={14}
+              color={COLORS.accentBadge}
+              style={{ marginRight: 4 }}
+            />
+            <Text style={styles.ratingText}>
+              {typeof rating === 'number' ? rating.toFixed(1) : '—'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Leaf illustratie */}
+        <Animated.Image source={LEAF_IMG} style={[styles.leaf, rotateStyle]} />
+
+        {/* Add / Saved knop */}
+        <Pressable
+          onPress={handlePressSaved}
+          hitSlop={10}
+          style={[styles.addButton, saved && styles.addButtonSaved]}
+        >
+          <Animated.View style={{ transform: [{ scale: iconScale }] }}>
+            <Ionicons
+              name={saved ? 'checkmark' : 'add'}
+              size={22}
+              color={saved ? '#ffffff' : COLORS.primaryDark}
+            />
+          </Animated.View>
+        </Pressable>
+      </Animated.View>
     </Pressable>
   );
 }

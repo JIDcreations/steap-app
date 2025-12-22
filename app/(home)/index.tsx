@@ -4,9 +4,10 @@ import useTeaTypes from '@/data/tea-types';
 import { useTeas } from '@/data/teas';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Easing,
   ImageBackground,
   RefreshControl,
   ScrollView,
@@ -40,6 +41,13 @@ export default function HomeScreen() {
   // animation state for "just posted" tea
   const slideAnim = useState(() => new Animated.Value(0))[0];
   const [justPostedId, setJustPostedId] = useState<string | null>(null);
+
+  // -----------------------
+  // ✨ Micro animations
+  // -----------------------
+  const screenIn = useRef(new Animated.Value(0)).current; // header/search/chips
+  const listIn = useRef(new Animated.Value(0)).current; // horizontal cards stagger
+  const recentIn = useRef(new Animated.Value(0)).current; // recent list stagger
 
   useEffect(() => {
     (async () => {
@@ -115,6 +123,36 @@ export default function HomeScreen() {
     useCallback(() => {
       let alive = true;
 
+      // reset entrance anims every time we navigate back to Home
+      screenIn.stopAnimation();
+      listIn.stopAnimation();
+      recentIn.stopAnimation();
+
+      screenIn.setValue(0);
+      listIn.setValue(0);
+      recentIn.setValue(0);
+
+      Animated.parallel([
+        Animated.timing(screenIn, {
+          toValue: 1,
+          duration: 700,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(listIn, {
+          toValue: 1,
+          duration: 760,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(recentIn, {
+          toValue: 1,
+          duration: 820,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
+
       (async () => {
         // refresh when returning to Home
         mutate();
@@ -144,7 +182,7 @@ export default function HomeScreen() {
       return () => {
         alive = false;
       };
-    }, [mutate, refreshFavorites, slideAnim])
+    }, [mutate, refreshFavorites, slideAnim, screenIn, listIn, recentIn])
   );
 
   const filtered = useMemo(() => {
@@ -176,6 +214,87 @@ export default function HomeScreen() {
     return filtered.slice(0, 3);
   }, [filtered]);
 
+  // -----------------------
+  // ✨ Animated helpers
+  // -----------------------
+  const headerAnimStyle = {
+    opacity: screenIn.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 1],
+      extrapolate: 'clamp',
+    }),
+    transform: [
+      {
+        translateY: screenIn.interpolate({
+          inputRange: [0, 1],
+          outputRange: [10, 0],
+          extrapolate: 'clamp',
+        }),
+      },
+    ],
+  };
+
+  const chipsAnimStyle = {
+    opacity: screenIn.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 1],
+      extrapolate: 'clamp',
+    }),
+    transform: [
+      {
+        translateX: screenIn.interpolate({
+          inputRange: [0, 1],
+          outputRange: [18, 0],
+          extrapolate: 'clamp',
+        }),
+      },
+    ],
+  };
+
+  const hCardStyleForIndex = useCallback(
+    (index: number) => {
+      const start = Math.min(0.9, index * 0.085);
+      const inputRange = [start, Math.min(1, start + 0.25)];
+
+      const opacity = listIn.interpolate({
+        inputRange,
+        outputRange: [0, 1],
+        extrapolate: 'clamp',
+      });
+
+      const translateY = listIn.interpolate({
+        inputRange,
+        outputRange: [14, 0],
+        extrapolate: 'clamp',
+      });
+
+      return { opacity, transform: [{ translateY }] };
+    },
+    [listIn]
+  );
+
+  const recentStyleForIndex = useCallback(
+    (index: number) => {
+      const start = Math.min(0.85, index * 0.1);
+      const inputRange = [start, Math.min(1, start + 0.3)];
+
+      const opacity = recentIn.interpolate({
+        inputRange,
+        outputRange: [0, 1],
+        extrapolate: 'clamp',
+      });
+
+      const translateY = recentIn.interpolate({
+        inputRange,
+        outputRange: [16, 0],
+        extrapolate: 'clamp',
+      });
+
+      return { opacity, transform: [{ translateY }] };
+    },
+    [recentIn]
+  );
+
   if (isLoading) return <Text>Loading teas...</Text>;
   if (error) return <Text selectable>{String(error)}</Text>;
 
@@ -199,69 +318,74 @@ export default function HomeScreen() {
           paddingBottom: SPACING.xl,
         }}
       >
-        {/* Titel */}
-        <View
-          style={{
-            alignItems: 'center',
-            marginBottom: SPACING.xl,
-          }}
-        >
-          <Text
-            style={[
-              TYPO.display1,
-              {
-                color: COLORS.primaryDark,
-                textTransform: 'uppercase',
-              },
-            ]}
+        {/* Header (Title + Search) */}
+        <Animated.View style={headerAnimStyle}>
+          {/* Titel */}
+          <View
+            style={{
+              alignItems: 'center',
+              marginBottom: SPACING.xl,
+            }}
           >
-            ATEATUDE
-          </Text>
-        </View>
+            <Text
+              style={[
+                TYPO.display1,
+                {
+                  color: COLORS.primaryDark,
+                  textTransform: 'uppercase',
+                },
+              ]}
+            >
+              ATEATUDE
+            </Text>
+          </View>
 
-        {/* Search Bar */}
-        <View style={{ marginBottom: SPACING.md }}>
-          <SearchBar
-            value={q}
-            onChangeText={setQ}
-            onClear={() => setQ('')}
-            placeholder="Search for teas"
-          />
-        </View>
+          {/* Search Bar */}
+          <View style={{ marginBottom: SPACING.md }}>
+            <SearchBar
+              value={q}
+              onChangeText={setQ}
+              onClear={() => setQ('')}
+              placeholder="Search for teas"
+            />
+          </View>
+        </Animated.View>
 
         {/* Filter chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{
-            marginBottom: SPACING.lg,
-            marginHorizontal: -SPACING.lg,
-          }}
-          contentContainerStyle={{
-            paddingHorizontal: SPACING.lg,
-          }}
-        >
-          <View style={{ flexDirection: 'row' }}>
-            <Chip
-              label="All"
-              active={!selectedType}
-              onPress={() => setSelectedType(null)}
-            />
-
-            {teaTypes.map((type: any) => (
+        <Animated.View style={chipsAnimStyle}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{
+              marginBottom: SPACING.lg,
+              marginHorizontal: -SPACING.lg,
+            }}
+            contentContainerStyle={{
+              paddingHorizontal: SPACING.lg,
+            }}
+          >
+            <View style={{ flexDirection: 'row' }}>
               <Chip
-                key={type._id}
-                label={type.name}
-                active={selectedType === type.name}
-                onPress={() =>
-                  setSelectedType(
-                    selectedType === type.name ? null : type.name
-                  )
-                }
+                label="All"
+                active={!selectedType}
+                onPress={() => setSelectedType(null)}
               />
-            ))}
-          </View>
-        </ScrollView>
+
+              {teaTypes.map((type: any) => (
+                <Chip
+                  key={type._id}
+                  label={type.name}
+                  active={selectedType === type.name}
+                  onPress={() =>
+                    setSelectedType(
+                      selectedType === type.name ? null : type.name
+                    )
+                  }
+                />
+              ))}
+            </View>
+          </ScrollView>
+        </Animated.View>
 
         {/* Teacards – horizontale scroller */}
         {filtered && filtered.length > 0 ? (
@@ -277,22 +401,26 @@ export default function HomeScreen() {
             }}
           >
             <View style={{ flexDirection: 'row' }}>
-              {filtered.map((tea: any) => (
-                <TeaCard
+              {filtered.map((tea: any, index: number) => (
+                <Animated.View
                   key={tea._id}
-                  name={tea.name}
-                  typeName={tea.type?.name}
-                  rating={tea.rating}
-                  color={tea.color}
-                  saved={isSaved(tea._id)}
-                  onToggleSaved={() => handleToggleSaved(tea._id)}
-                  onPressCard={() =>
-                    router.push({
-                      pathname: '/tea/[id]',
-                      params: { id: tea._id },
-                    })
-                  }
-                />
+                  style={hCardStyleForIndex(index)}
+                >
+                  <TeaCard
+                    name={tea.name}
+                    typeName={tea.type?.name}
+                    rating={tea.rating}
+                    color={tea.color}
+                    saved={isSaved(tea._id)}
+                    onToggleSaved={() => handleToggleSaved(tea._id)}
+                    onPressCard={() =>
+                      router.push({
+                        pathname: '/tea/[id]',
+                        params: { id: tea._id },
+                      })
+                    }
+                  />
+                </Animated.View>
               ))}
             </View>
           </ScrollView>
@@ -307,19 +435,40 @@ export default function HomeScreen() {
         {/* Recently posted — verticale wide cards */}
         {recentTeas.length > 0 && (
           <View style={{ marginTop: SPACING.lg }}>
-            <Text
-              style={[
-                TYPO.cardTitle,
-                { color: COLORS.primaryDark, marginBottom: SPACING.sm },
-              ]}
+            <Animated.View
+              style={{
+                opacity: recentIn.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 1],
+                }),
+                transform: [
+                  {
+                    translateY: recentIn.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [10, 0],
+                    }),
+                  },
+                ],
+              }}
             >
-              Recently posted
-            </Text>
+              <Text
+                style={[
+                  TYPO.cardTitle,
+                  { color: COLORS.primaryDark, marginBottom: SPACING.sm },
+                ]}
+              >
+                Recently posted
+              </Text>
+            </Animated.View>
 
-            {recentTeas.map((tea: any) => {
+            {recentTeas.map((tea: any, index: number) => {
               const isJustPosted = justPostedId === tea._id;
 
-              const animatedStyle = isJustPosted
+              // base stagger for every row
+              const baseStyle = recentStyleForIndex(index);
+
+              // extra "just posted" spring on top
+              const justPostedStyle = isJustPosted
                 ? {
                     opacity: slideAnim.interpolate({
                       inputRange: [0, 1],
@@ -360,15 +509,13 @@ export default function HomeScreen() {
                 />
               );
 
-              return isJustPosted ? (
+              return (
                 <Animated.View
-                  key={`recent-anim-${tea._id}`}
-                  style={animatedStyle}
+                  key={`recent-wrap-${tea._id}`}
+                  style={isJustPosted ? [baseStyle, justPostedStyle] : baseStyle}
                 >
                   {row}
                 </Animated.View>
-              ) : (
-                row
               );
             })}
           </View>
@@ -377,3 +524,8 @@ export default function HomeScreen() {
     </ImageBackground>
   );
 }
+
+/**
+ * AI-based code assistance was used during development
+ * for guidance, explanation and debugging.
+ */
