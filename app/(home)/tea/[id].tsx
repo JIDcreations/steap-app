@@ -12,12 +12,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PostButton from '../../../components/PostButton';
+import { useToastPill } from '../../../components/ToastPill';
 import { getCurrentUser } from '../../../data/auth';
 import { getFavorites, toggleFavorite } from '../../../data/favorites';
+import { useTea } from '../../../data/tea';
 import { COLORS, SPACING, TYPO } from '../../theme';
-
-// ✅ toast component
-import { useToastPill } from '../../../components/ToastPill';
 
 // Adjust only this to move blob up/down
 const BLOB_TOP = -200;
@@ -31,8 +30,10 @@ export default function TeaDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const [tea, setTea] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const teaId = Array.isArray(id) ? id[0] : id;
+
+  // ✅ tea via SWR hook (no fetch in screen)
+  const { tea, isLoading: loading } = useTea(teaId);
 
   const [userId, setUserId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -40,24 +41,6 @@ export default function TeaDetailScreen() {
 
   // ✅ toast (same as post)
   const { show: showToast, Toast } = useToastPill({ COLORS, SPACING, TYPO });
-
-  // load tea
-  useEffect(() => {
-    async function loadTea() {
-      try {
-        const res = await fetch(
-          `${process.env.EXPO_PUBLIC_API_URL}/api/teas/${id}`
-        );
-        const data = await res.json();
-        setTea(data);
-      } catch (e) {
-        console.warn('Failed to load tea', e);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadTea();
-  }, [id]);
 
   // load current user
   useEffect(() => {
