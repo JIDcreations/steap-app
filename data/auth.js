@@ -1,14 +1,12 @@
 // data/auth.js
+import { API_URL } from '@/constants/Api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// use the same variable you already have working
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const USER_KEY = 'steap:user';
 
 /** Log in user with username + password */
 export async function login(username, password) {
-  const res = await fetch(`${API_URL}/api/auth/login`, {
+  const res = await fetch(`${API_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
@@ -24,7 +22,7 @@ export async function login(username, password) {
 
 /** Register new user with username + password */
 export async function register(username, password, avatarColor = '#C2A98B') {
-  const res = await fetch(`${API_URL}/api/auth/register`, {
+  const res = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password, avatarColor }),
