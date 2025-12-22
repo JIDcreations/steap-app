@@ -1,31 +1,56 @@
 // app/(home)/settings.tsx
-import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter, type Href } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-    Alert,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ImageBackground,
+  Keyboard,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSWRConfig } from 'swr';
 
+import { AuthButton } from '../../components/AuthButton';
+import BioInput from '../../components/BioInput';
 import { logout } from '../../data/auth';
 import useBioUpdate from '../../data/bio-update';
 import useMe, { ME_KEY } from '../../data/me';
 import { COLORS, SPACING, TYPO } from '../theme';
 
+// Toast
+import { useToastPill } from '@/components/ToastPill';
+
 export default function SettingsScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { mutate } = useSWRConfig();
 
-  const { user, isLoading } = useMe();
+  const { user } = useMe();
   const { trigger, isMutating, error } = useBioUpdate();
 
+  const { show, Toast } = useToastPill({ COLORS, SPACING, TYPO });
+
   const [bio, setBio] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  // ✅ track keyboard height so toast can sit above it
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', e => {
+      setKeyboardHeight(e.endCoordinates?.height ?? 0);
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const userId = useMemo(() => {
     if (!user) return null;
@@ -38,118 +63,142 @@ export default function SettingsScreen() {
     }
   }, [user]);
 
-  async function onSaveBio() {
+  async function handleSave() {
+    if (!userId) return;
+
     try {
-      if (!userId) return;
+      setSaving(true);
 
-      const updatedUser = await trigger(userId, bio);
-
-      // Update SWR cache for "me" so other screens update instantly
+      const updatedUser = await trigger(userId, bio.trim());
       mutate(ME_KEY, updatedUser, { revalidate: false });
 
-      Alert.alert('Saved', 'Your bio was updated.');
-    } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to update bio');
+      show({ message: 'Bio saved', icon: 'checkmark-circle' });
+    } finally {
+      setSaving(false);
     }
   }
 
-  async function onLogout() {
-    try {
-      await logout();
-
-      // Clear SWR cache for "me"
-      mutate(ME_KEY, null, { revalidate: false });
-
-      // Adjust this route if your login route is different
-      router.replace('/login' as any);
-    } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Logout failed');
-    }
+  async function handleLogout() {
+    await logout();
+    mutate(ME_KEY, null, { revalidate: false });
+    router.replace('/login' as Href);
   }
+
+  const disabledSave = saving || isMutating || !userId;
+
+  // ✅ toast bottom: if keyboard open -> sit above it, else normal bottom
+  const toastBottom = keyboardHeight > 0 ? keyboardHeight + 16 : 34;
 
   return (
-    <ScrollView
-      style={{ backgroundColor: COLORS.background }}
-      contentContainerStyle={{
-        paddingTop: insets.top + SPACING.lg,
-        paddingBottom: insets.bottom + SPACING.lg,
-        paddingHorizontal: SPACING.lg,
-        gap: SPACING.lg,
-      }}
+    <ImageBackground
+      source={require('../../assets/images/MounteaBG3.png')}
+      style={styles.bg}
+      resizeMode="cover"
     >
-      <Text style={[TYPO.screenTitle, { color: COLORS.teaCardText }]}>
-        Settings
-      </Text>
+      {/* Toast overlay (above keyboard) */}
+      <Toast bottom={toastBottom} />
 
-      <View style={{ gap: SPACING.sm }}>
-        <Text style={[TYPO.cardSubtitle, { color: COLORS.teaCardText }]}>
-          Bio
-        </Text>
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={110}
+        extraKeyboardSpace={-40}
+        disableScrollOnKeyboardHide
+      >
+        <View style={styles.content}>
+          {/* Top block: SETTINGS + back */}
+          <View style={styles.topBlock}>
+            <Pressable onPress={() => router.back()} style={styles.backBtn}>
+              <Ionicons name="chevron-back" size={20} color="#ffffff" />
+            </Pressable>
 
-        <TextInput
-          value={bio}
-          onChangeText={setBio}
-          placeholder="Add a short bio…"
-          placeholderTextColor={COLORS.teaCardText}
-          multiline
-          style={{
-            minHeight: 96,
-            paddingVertical: 12,
-            paddingHorizontal: 14,
-            borderRadius: 14,
-            backgroundColor: COLORS.backgroundAlt,
-            borderWidth: 1,
-            borderColor: COLORS.border,
-            color: COLORS.teaCardText,
-            textAlignVertical: 'top',
-          }}
-        />
+            <Text style={styles.pageTitle}>SETTINGS</Text>
 
-        {!!error && (
-          <Text style={[TYPO.body, { color: COLORS.danger }]}>
-            {String((error as any)?.message || 'Something went wrong')}
-          </Text>
-        )}
+            <View style={{ width: 44, height: 44 }} />
+          </View>
 
-        <TouchableOpacity
-          onPress={onSaveBio}
-          disabled={isLoading || !userId || isMutating}
-          style={{
-            marginTop: SPACING.sm,
-            paddingVertical: 14,
-            borderRadius: 14,
-            alignItems: 'center',
-            backgroundColor: COLORS.primaryDark,
-            opacity: isLoading || !userId || isMutating ? 0.6 : 1,
-          }}
-        >
-          <Text style={[TYPO.body, { color: COLORS.primaryTextOnDark }]}>
-            {isMutating ? 'Saving…' : 'Save bio'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+          {/* Bottom block */}
+          <View style={styles.bottomBlock}>
+            <View style={styles.formBlock}>
+              <BioInput
+                value={bio}
+                onChangeText={setBio}
+                placeholder="Add a short bio…"
+              />
 
-      <View style={{ gap: SPACING.sm }}>
-        <Text style={[TYPO.cardSubtitle, { color: COLORS.teaCardText }]}>
-          Account
-        </Text>
+              <AuthButton
+                label="Save"
+                loading={saving || isMutating}
+                disabled={disabledSave}
+                onPress={handleSave}
+              />
 
-        <TouchableOpacity
-          onPress={onLogout}
-          style={{
-            paddingVertical: 14,
-            borderRadius: 14,
-            alignItems: 'center',
-            backgroundColor: COLORS.teaCardDark,
-            borderWidth: 1,
-            borderColor: COLORS.border,
-          }}
-        >
-          <Text style={[TYPO.body, { color: COLORS.teaCardText }]}>
-            Log out
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+              <AuthButton
+                label="Log out"
+                loading={false}
+                disabled={false}
+                onPress={handleLogout}
+              />
+            </View>
+
+            {!!error && (
+              <Text style={styles.error}>
+                {String((error as any)?.message || 'Failed to update bio')}
+              </Text>
+            )}
+          </View>
+        </View>
+      </KeyboardAwareScrollView>
+    </ImageBackground>
   );
 }
+
+const styles = StyleSheet.create({
+  bg: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    paddingHorizontal: SPACING.xl,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  content: {
+    flex: 1,
+    paddingTop: 76,
+  },
+  topBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  backBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+  pageTitle: {
+    ...TYPO.display2,
+    color: '#ffffff',
+    textAlign: 'center',
+    letterSpacing: 2,
+  },
+  bottomBlock: {
+    marginTop: 'auto',
+    paddingBottom: 100,
+    gap: 30,
+  },
+  formBlock: {
+    gap: 30,
+  },
+  error: {
+    color: '#ff5a5a',
+    textAlign: 'center',
+    marginTop: SPACING.sm,
+    ...TYPO.small,
+  },
+});

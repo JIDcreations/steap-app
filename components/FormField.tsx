@@ -1,11 +1,11 @@
 // components/FormField.tsx
 import React from 'react';
 import {
-    KeyboardTypeOptions,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  KeyboardTypeOptions,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { COLORS, SPACING } from '../app/theme';
 
