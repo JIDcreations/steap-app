@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+  Animated,
+  Easing,
   ImageBackground,
   Keyboard,
   Pressable,
@@ -35,7 +37,10 @@ export default function SettingsScreen() {
 
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  // ✅ load auth id (SINGLE SOURCE OF TRUTH)
+  // Animations
+  const cardIn = React.useRef(new Animated.Value(0)).current;
+  const saveHint = React.useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     async function loadAuth() {
       const auth = await getCurrentUser();
@@ -44,7 +49,6 @@ export default function SettingsScreen() {
     loadAuth();
   }, []);
 
-  // ✅ init bio from backend user
   useEffect(() => {
     if (user?.bio !== undefined) {
       const value = user.bio || '';
@@ -53,7 +57,6 @@ export default function SettingsScreen() {
     }
   }, [user]);
 
-  // keyboard tracking (toast position)
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', e => {
       setKeyboardHeight(e.endCoordinates?.height ?? 0);
@@ -68,6 +71,44 @@ export default function SettingsScreen() {
     };
   }, []);
 
+  const hasChanged = bio.trim() !== initialBio.trim();
+  const disabledSave = saving || isMutating || !userId || !hasChanged;
+
+  useEffect(() => {
+    Animated.timing(cardIn, {
+      toValue: 1,
+      duration: 520,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [cardIn]);
+
+  useEffect(() => {
+    if (hasChanged && !disabledSave) {
+      const loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(saveHint, {
+            toValue: 1,
+            duration: 650,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(saveHint, {
+            toValue: 0,
+            duration: 650,
+            easing: Easing.in(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      loop.start();
+      return () => loop.stop();
+    } else {
+      saveHint.stopAnimation();
+      saveHint.setValue(0);
+    }
+  }, [hasChanged, disabledSave, saveHint]);
+
   async function handleSave() {
     if (!userId) return;
 
@@ -75,7 +116,6 @@ export default function SettingsScreen() {
       setSaving(true);
 
       const updatedUser = await trigger(userId, bio.trim());
-
       mutate(ME_KEY, updatedUser, { revalidate: false });
       setInitialBio(bio.trim());
 
@@ -91,14 +131,6 @@ export default function SettingsScreen() {
     router.replace('/login' as Href);
   }
 
-  const hasChanged = bio.trim() !== initialBio.trim();
-
-  const disabledSave =
-    saving ||
-    isMutating ||
-    !userId ||
-    !hasChanged;
-
   const toastBottom = keyboardHeight > 0 ? keyboardHeight + 16 : 34;
 
   return (
@@ -107,7 +139,7 @@ export default function SettingsScreen() {
       style={styles.bg}
       resizeMode="cover"
     >
-      <Toast bottom={toastBottom} />
+      <View pointerEvents="none" style={styles.bgOverlay} />
 
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
@@ -118,49 +150,105 @@ export default function SettingsScreen() {
         disableScrollOnKeyboardHide
       >
         <View style={styles.content}>
-          {/* Header */}
           <View style={styles.topBlock}>
-            <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Pressable
+              onPress={() => router.back()}
+              style={({ pressed }) => [
+                styles.backBtn,
+                { transform: [{ scale: pressed ? 0.96 : 1 }] },
+              ]}
+            >
               <Ionicons name="chevron-back" size={20} color="#ffffff" />
             </Pressable>
 
-            <Text style={styles.pageTitle}>SETTINGS</Text>
-
+            <Text style={styles.pageTitle}>Settings</Text>
             <View style={{ width: 44 }} />
           </View>
 
-          {/* Form */}
           <View style={styles.bottomBlock}>
-            <View style={styles.formBlock}>
-              <BioInput
-                value={bio}
-                onChangeText={setBio}
-                placeholder="Add a short bio…"
-              />
+            <Animated.View
+              style={[
+                styles.card,
+                {
+                  opacity: cardIn,
+                  transform: [
+                    {
+                      translateY: cardIn.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [18, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>Profile</Text>
+                <Text style={styles.cardSubtitle}>
+                  This bio shows under your name.
+                </Text>
+              </View>
 
-              <AuthButton
-                label="Save"
-                loading={saving || isMutating}
-                disabled={disabledSave}
-                onPress={handleSave}
-              />
+              <View style={styles.formBlock}>
+                <BioInput
+                  value={bio}
+                  onChangeText={setBio}
+                  placeholder="Add a short bio…"
+                />
 
-              <AuthButton
-                label="Log out"
-                loading={false}
-                disabled={false}
-                onPress={handleLogout}
-              />
-            </View>
+                <View style={styles.buttonStack}>
+                  <Animated.View
+                    style={{
+                      transform: [
+                        {
+                          scale: saveHint.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [1, 1.02],
+                          }),
+                        },
+                      ],
+                    }}
+                  >
+                    <AuthButton
+                      label="Save changes"
+                      loading={saving || isMutating}
+                      disabled={disabledSave}
+                      onPress={handleSave}
+                    />
+                  </Animated.View>
 
-            {!!error && (
-              <Text style={styles.error}>
-                {String((error as any)?.message || 'Failed to update bio')}
-              </Text>
-            )}
+                  <View style={styles.divider} />
+
+                  <View style={styles.dangerZone}>
+                    <Text style={styles.dangerTitle}>Account</Text>
+                    <Text style={styles.dangerSubtitle}>
+                      Logging out will remove your session on this device.
+                    </Text>
+
+                    <AuthButton
+                      label="Log out"
+                      loading={false}
+                      disabled={false}
+                      onPress={handleLogout}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              {!!error && (
+                <Text style={styles.error}>
+                  {String((error as any)?.message || 'Failed to update bio')}
+                </Text>
+              )}
+            </Animated.View>
           </View>
         </View>
       </KeyboardAwareScrollView>
+
+      {/* ✅ Toast always on top */}
+      <View pointerEvents="box-none" style={styles.toastLayer}>
+        <Toast bottom={toastBottom} />
+      </View>
     </ImageBackground>
   );
 }
@@ -170,18 +258,32 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: SPACING.xl,
   },
+  bgOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.28)',
+  },
+
+  toastLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 9999,
+    elevation: 9999,
+  },
+
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 28,
   },
   content: {
     flex: 1,
-    paddingTop: 76,
+    paddingTop: 64,
   },
+
   topBlock: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 20,
+    marginTop: 12,
+    marginBottom: 18,
   },
   backBtn: {
     width: 44,
@@ -189,25 +291,74 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.25)',
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
   },
   pageTitle: {
-    ...TYPO.display2,
+    ...(TYPO.display2 ?? TYPO.screenTitle),
     color: '#ffffff',
-    letterSpacing: 2,
+    letterSpacing: 0.4,
   },
+
   bottomBlock: {
-    marginTop: 'auto',
-    paddingBottom: 100,
-    gap: 30,
+    marginTop: 40,
+    paddingBottom: 88,
   },
+
+  card: {
+    borderRadius: 22,
+    padding: 18,
+    backgroundColor: 'rgba(20,22,24,0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+  },
+  cardHeader: {
+    marginBottom: 14,
+    gap: 6,
+  },
+  cardTitle: {
+    ...TYPO.cardTitle,
+    color: '#ffffff',
+  },
+  cardSubtitle: {
+    ...TYPO.cardSubtitle,
+    color: 'rgba(255,255,255,0.70)',
+    lineHeight: 18,
+  },
+
   formBlock: {
-    gap: 30,
+    gap: 14,
   },
+
+  buttonStack: {
+    marginTop: 6,
+    gap: 14,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    marginVertical: 2,
+  },
+
+  dangerZone: {
+    gap: 8,
+  },
+  dangerTitle: {
+    ...TYPO.small,
+    color: 'rgba(255,255,255,0.85)',
+  },
+  dangerSubtitle: {
+    ...TYPO.small,
+    color: 'rgba(255,255,255,0.60)',
+    lineHeight: 18,
+  },
+
   error: {
     color: '#ff5a5a',
     textAlign: 'center',
-    marginTop: SPACING.sm,
+    marginTop: 12,
     ...TYPO.small,
   },
 });
