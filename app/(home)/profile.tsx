@@ -170,6 +170,9 @@ export default function ProfileScreen() {
   const displayBio =
     user?.bio?.trim() || 'Add a short bio in settings';
 
+  // ✅ avatarColor from backend (fallback to primaryDark)
+  const avatarBg = user?.avatarColor || COLORS.primaryDark;
+
   // Animated styles
   const headerAnimStyle = {
     opacity: screenIn,
@@ -236,15 +239,27 @@ export default function ProfileScreen() {
         }}
       >
         {/* Header block */}
-        <Animated.View style={[{ alignItems: 'center', marginBottom: SPACING.lg }, headerAnimStyle]}>
+        <Animated.View
+          style={[
+            { alignItems: 'center', marginBottom: SPACING.lg },
+            headerAnimStyle,
+          ]}
+        >
           {/* Avatar + settings */}
-          <Animated.View style={[{ marginBottom: SPACING.md, position: 'relative' }, avatarAnimStyle]}>
+          <Animated.View
+            style={[
+              { marginBottom: SPACING.md, position: 'relative' },
+              avatarAnimStyle,
+            ]}
+          >
             <View
               style={{
                 width: 120,
                 height: 120,
                 borderRadius: 60,
-                backgroundColor: COLORS.primaryDark,
+                backgroundColor: avatarBg, // ✅ dynamic
+                borderWidth: 1, // ✅ subtle edge so darkest swatch still reads
+                borderColor: 'rgba(255,255,255,0.14)',
               }}
             />
 
@@ -320,36 +335,66 @@ export default function ProfileScreen() {
                 paddingRight: SPACING.md,
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: 4,
+                }}
+              >
                 <Ionicons
                   name="bookmark-outline"
                   size={16}
                   color={COLORS.primaryTextOnDark}
                   style={{ marginRight: 6 }}
                 />
-                <Text style={{ color: COLORS.primaryTextOnDark, fontWeight: '700', fontSize: 16 }}>
+                <Text
+                  style={{
+                    color: COLORS.primaryTextOnDark,
+                    fontWeight: '700',
+                    fontSize: 16,
+                  }}
+                >
                   {savedCount.toString().padStart(2, '0')}
                 </Text>
               </View>
-              <Text style={{ color: COLORS.primaryTextOnDark, fontSize: 13 }}>
+              <Text
+                style={{ color: COLORS.primaryTextOnDark, fontSize: 13 }}
+              >
                 Saved Teas
               </Text>
             </View>
 
             {/* Posted teas */}
-            <View style={{ flex: 1, alignItems: 'center', paddingLeft: SPACING.md }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <View
+              style={{ flex: 1, alignItems: 'center', paddingLeft: SPACING.md }}
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: 4,
+                }}
+              >
                 <Ionicons
                   name="leaf-outline"
                   size={16}
                   color={COLORS.primaryTextOnDark}
                   style={{ marginRight: 6 }}
                 />
-                <Text style={{ color: COLORS.primaryTextOnDark, fontWeight: '700', fontSize: 16 }}>
+                <Text
+                  style={{
+                    color: COLORS.primaryTextOnDark,
+                    fontWeight: '700',
+                    fontSize: 16,
+                  }}
+                >
                   {totalTeas.toString().padStart(2, '0')}
                 </Text>
               </View>
-              <Text style={{ color: COLORS.primaryTextOnDark, fontSize: 13 }}>
+              <Text
+                style={{ color: COLORS.primaryTextOnDark, fontSize: 13 }}
+              >
                 Posted Teas
               </Text>
             </View>
@@ -411,7 +456,13 @@ export default function ProfileScreen() {
               );
             })
           ) : (
-            <Text style={{ fontFamily: 'System', fontSize: 13, color: COLORS.primaryDark }}>
+            <Text
+              style={{
+                fontFamily: 'System',
+                fontSize: 13,
+                color: COLORS.primaryDark,
+              }}
+            >
               No posts yet. Share your first tea on the Home tab.
             </Text>
           )}

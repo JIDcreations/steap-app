@@ -1,35 +1,35 @@
+// data/bio-update.ts
 import { API_URL } from '@/constants/Api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import useSWRMutation from 'swr/mutation';
 
-const USER_KEY = 'steap:user'
+export type UpdateProfilePayload = {
+  bio?: string;
+  avatarColor?: string;
+};
 
-async function patchBio(
+async function patchProfile(
   url: string,
-  { arg }: { arg: { userId: string; bio: string } }
+  { arg }: { arg: { userId: string; data: UpdateProfilePayload } }
 ) {
   const res = await fetch(`${url}/users/${arg.userId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ bio: arg.bio }),
-  })
+    body: JSON.stringify(arg.data),
+  });
 
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.message || 'Failed to update bio')
-  return data.user
+  const json = await res.json();
+  if (!res.ok) throw new Error(json?.message || 'Failed to update profile');
+
+  return json.user;
 }
 
 export default function useBioUpdate() {
-  const { trigger, data, error, isMutating } = useSWRMutation(API_URL, patchBio)
+  const { trigger, data, error, isMutating } = useSWRMutation(API_URL, patchProfile);
 
   return {
-    trigger: async (userId: string, bio: string) => {
-      const updatedUser = await trigger({ userId, bio })
-      await AsyncStorage.setItem(USER_KEY, JSON.stringify(updatedUser))
-      return updatedUser
-    },
+    trigger: (userId: string, data: UpdateProfilePayload) => trigger({ userId, data }),
     data,
     error,
     isMutating,
-  }
+  };
 }

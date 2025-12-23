@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, type Href } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -17,10 +18,35 @@ import { useSWRConfig } from 'swr';
 import { useToastPill } from '@/components/ToastPill';
 import { AuthButton } from '../../components/AuthButton';
 import BioInput from '../../components/BioInput';
-import { getCurrentUser, logout } from '../../data/auth';
+import { logout } from '../../data/auth';
 import useBioUpdate from '../../data/bio-update';
 import useMe, { ME_KEY } from '../../data/me';
 import { COLORS, SPACING, TYPO } from '../theme';
+
+const USER_KEY = 'steap:user';
+
+const COLOR_SWATCHES = [
+  '#b0a09bff',
+  '#C2A98B',
+  '#A88E85',
+  '#8D7570',
+  '#5E4F4D',
+  '#243235',
+  '#040403',
+] as const;
+
+async function readUserIdFromStorage(): Promise<string | null> {
+  const raw = await AsyncStorage.getItem(USER_KEY);
+  if (!raw) return null;
+
+  try {
+    const obj = JSON.parse(raw);
+    // support both shapes just in case
+    return obj?.id ?? obj?._id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -31,30 +57,46 @@ export default function SettingsScreen() {
   const { show, Toast } = useToastPill({ COLORS, SPACING, TYPO });
 
   const [userId, setUserId] = useState<string | null>(null);
+
   const [bio, setBio] = useState('');
   const [initialBio, setInitialBio] = useState('');
-  const [saving, setSaving] = useState(false);
 
+  const [avatarColor, setAvatarColor] = useState<string>(COLOR_SWATCHES[1]);
+  const [initialAvatarColor, setInitialAvatarColor] =
+    useState<string>(COLOR_SWATCHES[1]);
+
+  const [saving, setSaving] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  // Animations
-  const cardIn = React.useRef(new Animated.Value(0)).current;
-  const saveHint = React.useRef(new Animated.Value(0)).current;
+  // ✅ init from SWR user only once (prevents revalidate from overwriting input)
+  const didInit = useRef(false);
 
+  // Animations
+  const cardIn = useRef(new Animated.Value(0)).current;
+  const saveHint = useRef(new Animated.Value(0)).current;
+
+  // ✅ Reliable userId load (same source as data/me.ts)
   useEffect(() => {
-    async function loadAuth() {
-      const auth = await getCurrentUser();
-      setUserId(auth?.id ?? null);
-    }
-    loadAuth();
+    (async () => {
+      const id = await readUserIdFromStorage();
+      setUserId(id);
+    })();
   }, []);
 
+  // ✅ Init bio + avatarColor from SWR only once
   useEffect(() => {
-    if (user?.bio !== undefined) {
-      const value = user.bio || '';
-      setBio(value);
-      setInitialBio(value);
-    }
+    if (!user) return;
+    if (didInit.current) return;
+
+    const bioVal = user.bio || '';
+    setBio(bioVal);
+    setInitialBio(bioVal);
+
+    const colVal = user.avatarColor || COLOR_SWATCHES[1];
+    setAvatarColor(colVal);
+    setInitialAvatarColor(colVal);
+
+    didInit.current = true;
   }, [user]);
 
   useEffect(() => {
@@ -71,7 +113,10 @@ export default function SettingsScreen() {
     };
   }, []);
 
-  const hasChanged = bio.trim() !== initialBio.trim();
+  const bioChanged = bio.trim() !== initialBio.trim();
+  const colorChanged = avatarColor !== initialAvatarColor;
+  const hasChanged = bioChanged || colorChanged;
+
   const disabledSave = saving || isMutating || !userId || !hasChanged;
 
   useEffect(() => {
@@ -110,16 +155,26 @@ export default function SettingsScreen() {
   }, [hasChanged, disabledSave, saveHint]);
 
   async function handleSave() {
-    if (!userId) return;
+    const id = userId ?? (await readUserIdFromStorage());
+    if (!id) return;
 
     try {
       setSaving(true);
 
-      const updatedUser = await trigger(userId, bio.trim());
-      mutate(ME_KEY, updatedUser, { revalidate: false });
-      setInitialBio(bio.trim());
+      // ✅ only send what changed
+      const payload: { bio?: string; avatarColor?: string } = {};
+      if (bioChanged) payload.bio = bio.trim();
+      if (colorChanged) payload.avatarColor = avatarColor;
 
-      show({ message: 'Bio saved', icon: 'checkmark-circle' });
+      const updatedUser = await trigger(id, payload);
+
+      // ✅ merge into ME cache (so Profile updates immediately)
+      mutate(ME_KEY, { ...(user || {}), ...(updatedUser || {}) }, { revalidate: false });
+
+      if (bioChanged) setInitialBio(bio.trim());
+      if (colorChanged) setInitialAvatarColor(avatarColor);
+
+      show({ message: 'Saved', icon: 'checkmark-circle' });
     } finally {
       setSaving(false);
     }
@@ -185,11 +240,43 @@ export default function SettingsScreen() {
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>Profile</Text>
                 <Text style={styles.cardSubtitle}>
-                  This bio shows under your name.
+                  Bio shows under your name. Avatar color changes your profile icon.
                 </Text>
               </View>
 
               <View style={styles.formBlock}>
+                {/* Avatar color picker */}
+                <View style={styles.colorBlock}>
+                  <Text style={styles.label}>Avatar color</Text>
+
+                  <View style={styles.swatchesRow}>
+                    {COLOR_SWATCHES.map(c => {
+                      const selected = c === avatarColor;
+                      return (
+                        <Pressable
+                          key={c}
+                          onPress={() => setAvatarColor(c)}
+                          style={({ pressed }) => [
+                            styles.swatchWrap,
+                            { opacity: pressed ? 0.85 : 1 },
+                            selected && styles.swatchWrapSelected,
+                          ]}
+                        >
+                          <View style={[styles.swatchDot, { backgroundColor: c }]} />
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+
+                  <View style={styles.previewRow}>
+                    <View style={[styles.previewDot, { backgroundColor: avatarColor }]} />
+                    <Text style={styles.previewText}>
+                      {colorChanged ? 'New color selected' : 'Current color'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Bio */}
                 <BioInput
                   value={bio}
                   onChangeText={setBio}
@@ -237,7 +324,7 @@ export default function SettingsScreen() {
 
               {!!error && (
                 <Text style={styles.error}>
-                  {String((error as any)?.message || 'Failed to update bio')}
+                  {String((error as any)?.message || 'Failed to update profile')}
                 </Text>
               )}
             </Animated.View>
@@ -245,7 +332,6 @@ export default function SettingsScreen() {
         </View>
       </KeyboardAwareScrollView>
 
-      {/* ✅ Toast always on top */}
       <View pointerEvents="box-none" style={styles.toastLayer}>
         <Toast bottom={toastBottom} />
       </View>
@@ -331,6 +417,63 @@ const styles = StyleSheet.create({
     gap: 14,
   },
 
+  colorBlock: {
+    gap: 10,
+    marginBottom: 2,
+  },
+
+  label: {
+    ...TYPO.small,
+    color: 'rgba(255,255,255,0.85)',
+  },
+
+  swatchesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+    marginTop: 6,
+  },
+
+  swatchWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+
+  swatchWrapSelected: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+
+  swatchDot: {
+    width: 26,
+    height: 26,
+    borderRadius: 999,
+  },
+
+  previewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 6,
+  },
+
+  previewDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+  },
+
+  previewText: {
+    ...TYPO.small,
+    color: 'rgba(255,255,255,0.65)',
+  },
+
   buttonStack: {
     marginTop: 6,
     gap: 14,
@@ -362,7 +505,6 @@ const styles = StyleSheet.create({
     ...TYPO.small,
   },
 });
-
 
 /**
  * AI-based code assistance was used during development
