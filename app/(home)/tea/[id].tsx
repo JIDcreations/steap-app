@@ -153,11 +153,14 @@ export default function TeaDetailScreen() {
     }
   }
 
-  return (
+   return (
     <ImageBackground
       source={require('../../../assets/images/HomeBG.png')}
       style={{ flex: 1 }}
-      imageStyle={{ opacity: 0.2, resizeMode: 'cover' }}
+      imageStyle={{
+        resizeMode: 'cover',
+        opacity: 0.45,
+      }}
     >
       <View style={{ flex: 1 }}>
         <ScrollView
