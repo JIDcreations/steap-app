@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
   },
 
   recipeLabel: {
-    fontSize: 13,
+    fontSize: 16,
     color: COLORS.primaryDark,
     opacity: 0.8,
     marginBottom: 4,
