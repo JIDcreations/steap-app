@@ -16,7 +16,7 @@ import { AuthButton } from '../../components/AuthButton';
 import { PasswordInput } from '../../components/PasswordInput';
 import { UsernameInput } from '../../components/UsernameInput';
 import { login } from '../../data/auth';
-import { COLORS, FONTS, SPACING, TYPO } from '../theme';
+import { COLORS, FONTS, SPACING, TYPO } from '../../styles/theme';
 
 export default function LoginScreen() {
   const router = useRouter();

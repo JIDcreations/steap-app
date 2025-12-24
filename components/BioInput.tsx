@@ -1,7 +1,7 @@
 // components/BioInput.tsx
 import React from 'react';
 import { StyleSheet, TextInput } from 'react-native';
-import { SPACING, TYPO } from '../app/theme';
+import { SPACING, TYPO } from '../styles/theme';
 
 type Props = {
   value: string;

@@ -6,7 +6,7 @@ import {
   StyleSheet,
   Text,
 } from 'react-native';
-import { COLORS } from '../app/theme';
+import { COLORS } from '../styles/theme';
 
 type Props = {
   title: string;

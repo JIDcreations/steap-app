@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
-import { COLORS, RADIUS, SPACING, TYPO } from '../app/theme';
+import { COLORS, RADIUS, SPACING, TYPO } from '../styles/theme';
 
 type AuthButtonProps = {
   label: string;

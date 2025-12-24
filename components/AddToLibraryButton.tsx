@@ -1,7 +1,7 @@
 // components/AddToLibraryButton.tsx
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
-import { COLORS, SPACING } from '../app/theme';
+import { COLORS, SPACING } from '../styles/theme';
 
 type Props = {
   onPress: () => void;

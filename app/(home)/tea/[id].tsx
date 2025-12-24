@@ -18,7 +18,7 @@ import { useToastPill } from '../../../components/ToastPill';
 import { getCurrentUser } from '../../../data/auth';
 import { getFavorites, toggleFavorite } from '../../../data/favorites';
 import { useTea } from '../../../data/tea';
-import { COLORS, SPACING, TYPO } from '../../theme';
+import { COLORS, SPACING, TYPO } from '../../../styles/theme';
 
 // Adjust only this to move blob up/down
 const BLOB_TOP = -200;

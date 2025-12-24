@@ -1,6 +1,6 @@
 // components/UsernameInput.tsx
 import { StyleSheet, TextInput } from 'react-native';
-import { COLORS, RADIUS, SPACING } from '../app/theme';
+import { COLORS, RADIUS, SPACING } from '../styles/theme';
 
 type UsernameInputProps = {
   value: string;

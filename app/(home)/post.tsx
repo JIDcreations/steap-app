@@ -15,7 +15,7 @@ import PostButton from '../../components/PostButton';
 import RecipeForm from '../../components/RecipeForm';
 import useTeaPost from '../../data/tea-post';
 import useTeaTypes from '../../data/tea-types';
-import { COLORS, SPACING, TYPO } from '../theme';
+import { COLORS, SPACING, TYPO } from '../../styles/theme';
 
 // SWR cache update for Home
 import { TEAS_KEY } from '@/data/teas';

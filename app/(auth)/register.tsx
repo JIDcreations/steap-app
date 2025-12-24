@@ -16,7 +16,7 @@ import { AuthButton } from '../../components/AuthButton';
 import { PasswordInput } from '../../components/PasswordInput';
 import { UsernameInput } from '../../components/UsernameInput';
 import { register } from '../../data/auth';
-import { COLORS, FONTS, SPACING, TYPO } from '../theme';
+import { COLORS, FONTS, SPACING, TYPO } from '../../styles/theme';
 
 export default function RegisterScreen() {
   const router = useRouter();

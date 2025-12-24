@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 
-import { COLORS, FONTS, SHADOWS, SPACING } from '../app/theme';
+import { COLORS, FONTS, SHADOWS, SPACING } from '../styles/theme';
 
 const FLOWER_IMG: ImageSourcePropType = require('../assets/images/FlowerPlant.png');
 

@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 
-import { COLORS, FONTS, SHADOWS, SPACING } from '../app/theme';
+import { COLORS, FONTS, SHADOWS, SPACING } from '../styles/theme';
 
 const LEAF_IMG: ImageSourcePropType = require('../assets/images/Leaf1.png');
 

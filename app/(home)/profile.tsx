@@ -19,7 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import TeaRowCard from '../../components/TeaRowCard';
 import { getFavorites, toggleFavorite } from '../../data/favorites';
 import useMe from '../../data/me';
-import { COLORS, SPACING, TYPO } from '../theme';
+import { COLORS, SPACING, TYPO } from '../../styles/theme';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();

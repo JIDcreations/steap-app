@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Text, TextInput, View } from 'react-native';
 
-import { COLORS, SPACING } from '@/app/theme';
+import { COLORS, SPACING } from '@/styles/theme';
 
 type Props = {
   recipeIngredients: string;

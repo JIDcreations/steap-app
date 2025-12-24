@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getCurrentUser } from '../../data/auth';
 import { getFavorites, toggleFavorite } from '../../data/favorites';
-import { COLORS, SPACING, TYPO } from '../theme';
+import { COLORS, SPACING, TYPO } from '../../styles/theme';
 
 // Components
 import useTeaTypes from '@/data/tea-types';

@@ -21,7 +21,7 @@ import BioInput from '../../components/BioInput';
 import { logout } from '../../data/auth';
 import useBioUpdate from '../../data/bio-update';
 import useMe, { ME_KEY } from '../../data/me';
-import { COLORS, SPACING, TYPO } from '../theme';
+import { COLORS, SPACING, TYPO } from '../../styles/theme';
 
 const USER_KEY = 'steap:user';
 

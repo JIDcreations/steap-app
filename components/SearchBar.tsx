@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 
-import { COLORS, FONTS, RADIUS, SPACING } from '../app/theme';
+import { COLORS, FONTS, RADIUS, SPACING } from '../styles/theme';
 
 type Props = {
   value: string;
