@@ -1,10 +1,10 @@
 export const palette = {
-  bg: '#0E0E0E',          // page background (nearly black)
-  card: '#1A1A1A',        // card background
+  bg: '#0E0E0E',          
+  card: '#1A1A1A',        
   text: '#FFFFFF',
   textMuted: '#A0A0A0',
   chipBg: '#2A2A2A',
-  chipActiveBg: '#FFD93D', // brand accent
+  chipActiveBg: '#FFD93D', 
   chipActiveText: '#1A1A1A',
   divider: '#242424',
 };

@@ -1,6 +1,6 @@
 // src/theme.ts
 
-// Kleuren uit je hifi
+// Kleuren hifi
 export const COLORS = {
   // Background
   background: '#F2EFDD',      // zachte groene achtergrond
@@ -48,7 +48,7 @@ export const SPACING = {
   xxl: 32,
 };
 
-// Corner radii
+// Corner 
 export const RADIUS = {
   sm: 8,     // tags, kleine pill buttons
   md: 12,    // input fields
